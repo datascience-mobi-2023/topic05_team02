@@ -20,4 +20,10 @@ which(colnames(prism.cl)== "disease"
 which(rownames(prism.cl$disease)== "Kidney Cancer")
 ```
 mean.prism<- apply(t(prism),MARGIN=1,FUN=mean, na.rm=TRUE)
+hist(mean.prism)
+sd.prism<-apply(t(prism),MARGIN=1,FUN=sd, na.rm=TRUE)
+hist(sd.prism)
+var.prism<-apply(t(prism),MARGIN=1,FUN=var, na.rm=TRUE)
+hist(var.prism)
+
 range(mean.prism)
