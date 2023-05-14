@@ -1,0 +1,193 @@
+
+```{r}
+dim(prism.exp)
+class(prism.exp[1,2])
+pheatmap(prism.exp, show_rownames = TRUE, show_colnames = TRUE, na.rm=TRUE) 
+```
+```{r}
+#compute genes with highest variance in expression
+prism.exp.var<- apply(prism.exp,MARGIN=2,FUN=var)
+
+#top25% with hoghest variance:
+q75.exp.var = quantile(prism.exp.var, probs = 0.75)   # what is the 75% quantile of the variance?
+i.topvar.exp = which(prism.exp.var >= q75.exp.var)   # all columns (genes) with variance higher than 75%
+
+prism.exp.topvar = prism.exp[,i.topvar.exp]   # only select the gene with a variance in the top 25%
+
+```
+DATA CLEANUP
+```{r}
+#reorder prism.cl
+colnames(prism.cl)
+prism.cl_cleaned<-prism.cl[,c(1,2,13,12,16,17,6,20,7,19)]
+
+##make cell lines as row names
+rownames(prism.cl_cleaned)=prism.cl_cleaned$DepMap_ID
+prism.cl_cleaned=prism.cl_cleaned[-c(1)]
+```
+```{r}
+dim(prism.exp)
+class(prism.exp[1,2])
+pheatmap(prism.exp, show_rownames = TRUE, show_colnames = TRUE, na.rm=TRUE) 
+```
+
+WORK ON PRISM.EXP
+```{r cars}
+dim(prism.exp)
+```
+```{r}
+#compute genes with highest variance in expression
+prism.exp.var<- apply(prism.exp,MARGIN=2,FUN=var)
+
+#top25% with highest varianca:
+q75.exp.var = quantile(prism.exp.var, probs = 0.75)   # what is the 75% quantile of the variance?
+i.topvar.exp = which(prism.exp.var >= q75.exp.var)   # all columns (genes) with variance higher than 75%
+
+prism.exp.topvar = prism.exp[,i.topvar.exp]   # only select the gene with a variance in the top 25%
+```
+```{r}
+print(prism.exp.topvar)
+```
+
+PCA for PRISM.EXP
+```{r}
+pca = prcomp(t(prism.exp), center = FALSE, scale = FALSE)
+pca$sdev
+```
+
+```{r}
+mean.prism<- apply(t(prism),MARGIN=1,FUN=mean, na.rm=TRUE)
+hist(mean.prism)
+sd.prism<-apply(t(prism),MARGIN=1,FUN=sd, na.rm=TRUE)
+hist(sd.prism)
+var.prism<-apply(t(prism),MARGIN=1,FUN=var, na.rm=TRUE)
+hist(var.prism)
+
+hist(t(prism.exp),xlab="Transcripts per million")
+```
+KIDNEY CANCER
+```{r}
+install.packages("dplyr")
+
+##vektoren mit einzelnen cancertypes erstellen
+unique(prism.cl_cleaned$disease)
+cancertypes<- c(unique(prism.cl_cleaned$disease))
+sort.int(prism.cl_disease, method= cancertypes, na.last=NA, index.return=TRUE)
+print(cancertypes)
+#rownames of Kidney Cancer
+which(prism.cl_cleaned$disease=="Kidney Cancer")
+rownames(kidneyrows)
+#rownames for each cancer
+
+```
+
+PRISM.ACHILLES
+```{r}
+hist(t(prism.achilles), n=500)
+prism.achilles.var=apply(prism.achilles,MARGIN=2,FUN=var)
+plot(prism.achilles.var, xlab="Gene", ylab="Variance of gene knockout")
+abline(h=quantile(prism.achilles.var,probs=c(0.99,0.98,0.9,0.75),na.rm=TRUE),col='RED')
+##->cell lines with high variance in sensitivity to gene knockout
+```
+
+CREATION of DATA-FRAMES for the individual CANCER TYPES for PRISM.EXP
+```{r}
+##vektoren mit einzelnen cancertypes erstellen
+unique(prism.cl_cleaned$disease)
+cancertypes<- c(unique(prism.cl_cleaned$disease))
+print(cancertypes)
+
+#kidney
+kidney_df= prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Kidney Cancer")),]
+prism.exp.kidney= prism.exp[rownames(kidney_df),]
+
+#Bone cancer
+#bone_df= prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Bone Cancer")),]
+#prism.exp.bone= prism.exp[rownames(bone_df),]
+#Rhabdoid
+#prism.exp.rhabdoid= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Rhabdoid")),]),]
+#Neuroblastoma
+#prism.exp.neuroblastoma= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Neuroblastoma")),]),]
+#Sarcoma
+#prism.exp.sarcoma= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Sarcoma")),]),]
+#Brain Cancer
+#prism.exp.brain= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Brain Cancer")),]),]
+#Liver Cancer
+#prism.exp.liver= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Liver Cancer")),]),]
+#Colon/Colorectal Cancer
+#prism.exp.colon= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Colon/Colorectal Cancer")),]),]
+#Skin Cancer
+#prism.exp.skin= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Skin Cancer")),]),]
+#Bladder Cancer
+#prism.exp.bladder= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Bladder Cancer")),]),]
+#Lung Cancer
+#prism.exp.lung= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Lung Cancer")),]),]
+#Ovarian Cancer
+#prism.exp.ovarian= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Ovarian Cancer")),]),]
+#Breast Cancer
+#prism.exp.breast= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Breast Cancer")),]),]
+#Pancreatic Cancer
+#prism.exp.pancreas= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Pancreatic Cancer")),]),]
+#Gastric Cancer
+#prism.exp.gastric= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Gastric Cancer")),]),]
+#Prostate Cancer
+#prism.exp.prostate= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Prostate Cancer")),]),]
+#Fibroblast
+#prism.exp.fibroblast= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Fibroblast")),]),]
+#Gallbladder Cancer
+#prism.exp.gallbladder= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Gallbladder Cancer")),]),]
+#Thyroid Cancer
+#prism.exp.thyroid= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Thyroid Cancer")),]),]
+#Bilde Duct Cancer
+#prism.exp.bileduct= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Bile Duct Cancer")),]),]
+#Head and Neck Cancer
+#prism.exp.head= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Head and Neck Cancer")),]),]
+#Endometrial/Uterine Cancer
+#prism.exp.endometrial= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Endometrial/Uterine Cancer")),]),]
+#Esophageal Cancer
+#prism.exp.esophageal= prism.exp[rownames(prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Esophageal Cancer")),]),]
+
+
+##nach cancer type sortieren und dann jeweil die varianz für die spezifischen extrahierten rows
+#apply(hist to all df)
+
+```
+
+CREATION of DATA-FRAMES for the individual CANCER TYPES for PRISM.EXP and PRISM
+```{r}
+#Kidney
+prism.achilles.kidney= prism.achilles[rownames(kidney_df),]
+rownames(prism.achilles)=="ACH-000046"
+###für 6 Zelllinien wurden keine knock-out scores bestimmt!
+
+prism.kidney=prism[rownames(kidney_df),]
+print(rownames(kidney_df))
+```
+
+#irgendwas für Arne, Wirksame Drogen (1% Quantil und deren mode of action/ursprüngliches Einsatzgebiet)
+```{r}
+#wirksameDrogen2%= colnames(prism[which(apply(prism, 2, min, na.rm=T)< quantile(prism, probs=c(0.02),na.rm=TRUE))])
+
+#idx.kidney= colnames(prism.drug.means.kidney[which(apply(prism.drug.means.kidney, 2, min, na.rm=T)< -1.8)])
+
+#wirksameDrogen_0.02= colnames(prism[which(apply(prism, 2, min)< -5.431033)])
+#quantile(prism, probs=c(0.02),na.rm=TRUE)
+
+wirksameDrogen_0.01= colnames(prism[which(apply(prism, 2, min, na.rm=T)< quantile(prism, probs=c(0.01),na.rm=TRUE))])
+print(wirksameDrogen_0.01) 
+#1% Quantil-> 961 drug/concentration combinations
+
+wirksameDrogen_0.005= colnames(prism[which(apply(prism, 2, min, na.rm=T)< quantile(prism, probs=c(0.005),na.rm=TRUE))])
+print(wirksameDrogen_0.005) 
+#0.5% Quantil-> 689 drug/concentration combinations
+
+unique(prism.treat[prism.treat$broad_id %in% wirksameDrogen_0.01,]$moa)
+#->530
+unique(prism.treat[prism.treat$broad_id %in% wirksameDrogen_0.01,]$indication)
+#->338
+#amount of different mode of actions-> 530, indications->338
+unique(prism.treat$moa)
+unique(prism.treat$indication)
+```
+
+#nach einsatzgebiet/mode of action clustern und dann die mean wirksamkeit zb berechnen-> hat eine wirkstoffklasse ein besonders hohes einsatzgebiet
