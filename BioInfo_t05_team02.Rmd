@@ -63,6 +63,37 @@ plot(prism.exp.row_summaries_df$q1,
 points(prism.exp.row_summaries_df$q3, col="navy") #im gleichen Diagramm auch 75%
 ```
 
+#### find kidney cancer cell lines in datasets
+
+```{r}
+#Gives back all cell lines which are kidney-cancer-cell lines
+kidney_celllines<-print(prism.cl.kidney[,1])
+
+#stores only kidney cancer cell lines from other datasets in a new one
+prism.exp.kidney <- prism.exp[rownames(prism.exp) %in% prism.cl.kidney[,1], ] 
+```
+
+```{r}
+# Plotten aller Zeilen als separate Linien
+matplot(prism.exp, prism.exp[,-1], type = "l", lty = 1, col = 1:300)
+
+for (i in 1:10) {
+  hist(prism.exp[, i], main = paste0("Histogram for column ", i), breaks = 200,)
+}
+```
+
+#### Plot expressions of each cell line for each gene
+
+```{r}
+# Plotten aller Zeilen als separate Linien
+matplot(prism.exp.kidney, prism.exp.kidney[,-1], type = "l", lty = 1, col = 1:300,
+        )
+matplot(prism.exp.kidney[,-1], prism.exp.kidney, type = "l", lty = 1, col = 1:300)
+
+pheatmap(prism.exp.kidney)
+pheatmap(t(prism.exp.kidney))
+```
+
 ## prism.treat
 
 The dataset shows for each treatment (rows) information about the drugs and dosis.
@@ -82,34 +113,6 @@ head(prism)
 ```{r}
 plot(prism[,1], xlab = "cell lines", ylab= "treatment effect")
 abline(h = 0, col="red")
-
-
-# Plotten aller Zeilen als separate Linien
-matplot(prism.exp, prism.exp[,-1], type = "l", lty = 1, col = 1:300)
-
-for (i in 1:10) {
-  hist(prism.exp[, i], main = paste0("Histogram for column ", i), breaks = 200,)
-}
 ```
 
-#### find kidney cancer cell lines in datasets
-
-```{r}
-#Gives back all cell lines which are kidney-cancer-cell lines
-kidney_celllines<-print(prism.cl.kidney[,1])
-
-#stores only kidney cancer cell lines from other datasets in a new one
-prism.exp.kidney <- prism.exp[rownames(prism.exp) %in% prism.cl.kidney[,1], ] 
-```
-
-#### Plot expressions of each cell line for each gene
-
-```{r}
-# Plotten aller Zeilen als separate Linien
-matplot(prism.exp.kidney, prism.exp.kidney[,-1], type = "l", lty = 1, col = 1:300,
-        )
-matplot(prism.exp.kidney[,-1], prism.exp.kidney, type = "l", lty = 1, col = 1:300)
-
-pheatmap(prism.exp.kidney)
-pheatmap(t(prism.exp.kidney))
-```
+#### 
