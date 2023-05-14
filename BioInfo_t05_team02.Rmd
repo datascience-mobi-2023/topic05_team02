@@ -1,0 +1,115 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Data lookup
+
+## prism.exp
+
+This dataset shows the Transcripts per million of the genes (columns) for the cell lines (rows).
+
+```{r}
+head(prism.exp)
+```
+
+#### range of the values
+
+```{r}
+range(prism.exp)
+
+
+#ylab = "TPM",
+#xlab = "cell lines")
+
+```
+
+#### Summary for cell lines
+
+```{r}
+
+# create a function to calculate the mean, median, and quantiles for a row
+row_summary <- function(row) {
+  result <- c(mean(row), median(row), quantile(row, c(0.25, 0.75)), min(row), max(row), IQR(row))
+  names(result) <- c("mean", "median", "q1", "q3", "min", "max", "IQR")
+  return(result)
+}
+
+# apply the function to each row using apply()
+prism.exp_row_summaries <- apply(prism.exp, 1, row_summary)
+
+# convert the result to a data frame
+prism.exp.row_summaries_df <- as.data.frame(t(prism.exp_row_summaries))
+
+hist(prism.exp.row_summaries_df$q1, breaks = 50, xlab =  "Q25", main = "Histogram for 25%-Q of cell lines")
+hist(prism.exp.row_summaries_df$q3, breaks = 80, xlab = "Q75", main = "Histogram for 75%-Q of cell lines")
+hist(prism.exp.row_summaries_df$IQR, breaks = 80, xlab="IQR", main = "Histogram for IQR of cell lines")
+
+plot(prism.exp.row_summaries_df$IQR, ylab = "IQR" , xlab =  "cell lines", main = "Values of IQR of cell lines")
+```
+
+```{r}
+par(plt=c(0,0,1,1)+1,  # Set plot region to the whole device
+    mar=c(2,3,4,1) + 0.1, # Set margin sizes
+    xpd=TRUE) # Allow plotting outside the plot region
+plot(prism.exp.row_summaries_df$q1, 
+     ylab = "expression values of quantiles",
+     xlab = "cell lines", 
+     main = "Values of 25%-Q and 75%-Q of cell lines", 
+     col = "red4",
+     cex = 1.5,
+     ylim = c(min(prism.exp.row_summaries_df$q1, prism.exp.row_summaries_df$q3), 
+              max(prism.exp.row_summaries_df$q1, prism.exp.row_summaries_df$q3)))
+points(prism.exp.row_summaries_df$q3, col="navy") #im gleichen Diagramm auch 75%
+```
+
+## prism.treat
+
+The dataset shows for each treatment (rows) information about the drugs and dosis.
+
+```{r}
+summary(prism.treat)
+```
+
+## prism
+
+This dataset shows the treatment effects (columns) on the cell growth for each cell line (rows).
+
+```{r}
+head(prism)
+```
+
+```{r}
+plot(prism[,1], xlab = "cell lines", ylab= "treatment effect")
+abline(h = 0, col="red")
+
+
+# Plotten aller Zeilen als separate Linien
+matplot(prism.exp, prism.exp[,-1], type = "l", lty = 1, col = 1:300)
+
+for (i in 1:10) {
+  hist(prism.exp[, i], main = paste0("Histogram for column ", i), breaks = 200,)
+}
+```
+
+#### find kidney cancer cell lines in datasets
+
+```{r}
+#Gives back all cell lines which are kidney-cancer-cell lines
+kidney_celllines<-print(prism.cl.kidney[,1])
+
+#stores only kidney cancer cell lines from other datasets in a new one
+prism.exp.kidney <- prism.exp[rownames(prism.exp) %in% prism.cl.kidney[,1], ] 
+```
+
+#### Plot expressions of each cell line for each gene
+
+```{r}
+# Plotten aller Zeilen als separate Linien
+matplot(prism.exp.kidney, prism.exp.kidney[,-1], type = "l", lty = 1, col = 1:300,
+        )
+matplot(prism.exp.kidney[,-1], prism.exp.kidney, type = "l", lty = 1, col = 1:300)
+
+pheatmap(prism.exp.kidney)
+pheatmap(t(prism.exp.kidney))
+```
