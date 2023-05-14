@@ -17,18 +17,13 @@ head(prism.exp)
 
 ```{r}
 range(prism.exp)
-
-
-#ylab = "TPM",
-#xlab = "cell lines")
-
 ```
 
 #### Summary for cell lines
 
 ```{r}
 
-# create a function to calculate the mean, median, and quantiles for a row
+# create a function to calculate the mean, median, and quantiles for a row/cell lines
 row_summary <- function(row) {
   result <- c(mean(row), median(row), quantile(row, c(0.25, 0.75)), min(row), max(row), IQR(row))
   names(result) <- c("mean", "median", "q1", "q3", "min", "max", "IQR")
@@ -73,10 +68,19 @@ kidney_celllines<-print(prism.cl.kidney[,1])
 prism.exp.kidney <- prism.exp[rownames(prism.exp) %in% prism.cl.kidney[,1], ] 
 ```
 
+#### Plot prism.exp
+
+```{r}
+{r}
+# Plotten aller Zeilen als separate Linien
+matplot(prism.exp, prism.exp[,-1], col = 1:477)
+```
+
 ```{r}
 # Plotten aller Zeilen als separate Linien
 matplot(prism.exp, prism.exp[,-1], type = "l", lty = 1, col = 1:300)
 
+#Plot for the first i genes the frequency of expression values
 for (i in 1:10) {
   hist(prism.exp[, i], main = paste0("Histogram for column ", i), breaks = 200,)
 }
@@ -90,8 +94,8 @@ matplot(prism.exp.kidney, prism.exp.kidney[,-1], type = "l", lty = 1, col = 1:30
         )
 matplot(prism.exp.kidney[,-1], prism.exp.kidney, type = "l", lty = 1, col = 1:300)
 
-pheatmap(prism.exp.kidney)
-pheatmap(t(prism.exp.kidney))
+pheatmap(prism.exp.kidney,show_colnames = FALSE)
+pheatmap(t(prism.exp.kidney), show_colnames = FALSE)
 ```
 
 ## prism.treat
@@ -110,9 +114,38 @@ This dataset shows the treatment effects (columns) on the cell growth for each c
 head(prism)
 ```
 
+#### 
+
 ```{r}
-plot(prism[,1], xlab = "cell lines", ylab= "treatment effect")
+plot(prism[,100], xlab = "cell lines", ylab= "treatment effect", main= "Effect of one treatment on all cell lines")
 abline(h = 0, col="red")
 ```
 
 #### 
+
+## prism.achilles
+
+This dataset shows gene knockout-scores, representing the importance of one gene for cell survival, of every gene (columns) for the cell lines (rows).
+
+```{r}
+head(prism.achilles)
+```
+
+```{r}
+range(prism.achilles, na.rm=TRUE)
+#matplot(prism.achilles[,], na.rm=TRUE)
+```
+
+## prism.cl
+
+```{r}
+
+#DATA CLEANUP
+rownames(prism.cl)= prism.cl$DepMap_ID
+prism.cl=prism.cl[-c(1)]
+prism.cl=prism.cl[,c(1,12,11,15,16,5,19,6,18)]
+
+
+
+head(prism.cl)
+```
