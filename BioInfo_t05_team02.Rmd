@@ -13,13 +13,44 @@ This dataset shows the Transcripts per million of the genes (columns) for the ce
 head(prism.exp)
 ```
 
-#### range of the values
+#### Range of the values
+
+##### Code
 
 ```{r}
 range(prism.exp)
+
+range(prism.exp.kidney)
+```
+
+##### Plot
+
+```{r, fig.width=8, fig.height=6}
+
+hist(unlist(prism.exp), breaks = 23, main = "Histogram of prism.exp", xlab = "TPM value")
+hist(unlist(prism.exp.kidney), breaks = 23, main = "Histogram of prism.exp.kidney", xlab = "TPM value")
+
+density(unlist(prism.exp))
+density(unlist(prism.exp.kidney))
+
+#sum(unlist(prism.exp) >= 0 & unlist(prism.exp) <= 1)
+
+```
+
+```{r}
+pheatmap(prism.exp.kidney,show_colnames = FALSE, main = "Heatmap of prism.exp.kidney: TPM")
+```
+
+```{r}
+#Plot for the first i genes the frequency of expression values
+for (i in 1:10) {
+  hist(prism.exp[, i], main = paste0("Histogram for column ", i), breaks = 200,)
+}
 ```
 
 #### Summary for cell lines
+
+##### Code
 
 ```{r}
 
@@ -43,6 +74,8 @@ hist(prism.exp.row_summaries_df$IQR, breaks = 80, xlab="IQR", main = "Histogram 
 plot(prism.exp.row_summaries_df$IQR, ylab = "IQR" , xlab =  "cell lines", main = "Values of IQR of cell lines")
 ```
 
+##### Plot
+
 ```{r}
 par(plt=c(0,0,1,1)+1,  # Set plot region to the whole device
     mar=c(2,3,4,1) + 0.1, # Set margin sizes
@@ -58,44 +91,30 @@ plot(prism.exp.row_summaries_df$q1,
 points(prism.exp.row_summaries_df$q3, col="navy") #im gleichen Diagramm auch 75%
 ```
 
-#### find kidney cancer cell lines in datasets
+# find kidney cancer cell lines in datasets
 
 ```{r}
+
+#rownumbers of prism.cl with Kidney Cancer
+which(prism.cl$disease== "Kidney Cancer")
+
+prism.cl.kidney= prism.cl[c(which(prism.cl$disease== "Kidney Cancer")),]
+
 #Gives back all cell lines which are kidney-cancer-cell lines
 kidney_celllines<-print(prism.cl.kidney[,1])
 
+#Gives back all cell line ACh-numbers which are cancer-cell lines
+kidney_celllines_ACH <-print(rownames(prism.cl.kidney))
+
+
 #stores only kidney cancer cell lines from other datasets in a new one
 prism.exp.kidney <- prism.exp[rownames(prism.exp) %in% prism.cl.kidney[,1], ] 
-```
 
-#### Plot prism.exp
 
-```{r}
-{r}
-# Plotten aller Zeilen als separate Linien
-matplot(prism.exp, prism.exp[,-1], col = 1:477)
-```
+#for prism dataset
+prism.kidney <- prism[rownames(prism) %in% kidney_celllines_ACH,]
 
-```{r}
-# Plotten aller Zeilen als separate Linien
-matplot(prism.exp, prism.exp[,-1], type = "l", lty = 1, col = 1:300)
 
-#Plot for the first i genes the frequency of expression values
-for (i in 1:10) {
-  hist(prism.exp[, i], main = paste0("Histogram for column ", i), breaks = 200,)
-}
-```
-
-#### Plot expressions of each cell line for each gene
-
-```{r}
-# Plotten aller Zeilen als separate Linien
-matplot(prism.exp.kidney, prism.exp.kidney[,-1], type = "l", lty = 1, col = 1:300,
-        )
-matplot(prism.exp.kidney[,-1], prism.exp.kidney, type = "l", lty = 1, col = 1:300)
-
-pheatmap(prism.exp.kidney,show_colnames = FALSE)
-pheatmap(t(prism.exp.kidney), show_colnames = FALSE)
 ```
 
 ## prism.treat
@@ -114,7 +133,9 @@ This dataset shows the treatment effects (columns) on the cell growth for each c
 head(prism)
 ```
 
-#### 
+```{r}
+hist(unlist(prism), main= "Histogram of prism", xlab="Effect of treatment on cell growth ", breaks= 50)
+```
 
 ```{r}
 plot(prism[,100], xlab = "cell lines", ylab= "treatment effect", main= "Effect of one treatment on all cell lines")
@@ -133,7 +154,8 @@ head(prism.achilles)
 
 ```{r}
 range(prism.achilles, na.rm=TRUE)
-#matplot(prism.achilles[,], na.rm=TRUE)
+
+hist(unlist(prism.achilles), breaks = 80, main = "Histogram of prism.achilles", xlab = "gene knock-out scores")
 ```
 
 ## prism.cl
@@ -148,4 +170,119 @@ prism.cl=prism.cl[,c(1,12,11,15,16,5,19,6,18)]
 
 
 head(prism.cl)
+```
+
+## prism.cnv
+
+```{r}
+range(prism.cnv)
+```
+
+```{r}
+hist(unlist(prism.cnv), main= "Histogram of prism.cnv", xlab="copy number variation", breaks=300)
+```
+
+# Variance 
+
+## (of cell lines - kidney cancer)
+
+```{r}
+#NA-->0
+prism.kidney_NA_0<-prism.kidney
+prism.kidney_NA_0[is.na(prism.kidney_NA_0)] <- 0
+
+# Step 1: Calculate variances
+prism.kidney.cellline_variances <- apply(prism.kidney_NA_0, 1, var)
+
+# Step 2: Set threshold for upper n percent
+n_percent <- 0.1
+threshold <- quantile(prism.kidney.cellline_variances, 1 - n_percent)
+
+# Step 3: Filter highly variant pairs
+highly_variant_celllines <- rownames(prism.kidney_NA_0)[which(prism.kidney.cellline_variances > threshold)]
+
+print(highly_variant_celllines)
+```
+
+## of drugs- kidney cancer
+
+```{r}
+# Step 1: Calculate variances
+prism.kidney.drugs_variances <- apply(prism.kidney_NA_0, 2, var)
+
+# Step 2: Set threshold for upper n percent
+n_percent <- 0.0001
+threshold <- quantile(prism.kidney.drugs_variances, 1 - n_percent)
+
+# Step 3: Filter highly variant pairs
+highly_variant_drugs <- colnames(prism.kidney_NA_0)[which(prism.kidney.drugs_variances > threshold)]
+
+print(highly_variant_drugs)
+```
+
+### find them in prism.treat
+
+```{r}
+
+# Identify the highly variant drug names
+highly_variant_drugs_kidney <- colnames(prism.kidney_NA_0)[which(prism.kidney.drugs_variances > threshold)]
+
+# Show the filtered rows
+print(prism.treat[row.names(prism.treat) %in% highly_variant_drugs_kidney, ])
+```
+
+### extract dataset of prism for those cell lines 
+
+```{r}
+#store the drugnames as vector
+highly_variant_drugs_kidney_drugnames<- rownames(prism.treat[row.names(prism.treat) %in% highly_variant_drugs_kidney, ])
+
+# Extract the subset of columns based on the highly variant drug names
+prism.kidney.highly_variant_drugs <- prism[, colnames(prism) %in% highly_variant_drugs_kidney_drugnames]
+
+# Print the new dataset
+print(prism.kidney.highly_variant_drugs)
+
+```
+
+### show the cell lines with the most extreme values
+
+```{r}
+#NA=0
+prism.kidney.highly_variant_drugs.NA_0<-prism.kidney.highly_variant_drugs
+prism.kidney.highly_variant_drugs.NA_0[is.na(prism.kidney.highly_variant_drugs.NA_0)] <- 0  
+
+# Find the upper n% extreme values 
+
+
+# Extract the cell line names as vector
+
+
+```
+
+## of drugs - all cell lines
+
+```{r}
+#NA-->0
+prism.NA_0<-prism
+prism.NA_0[is.na(prism.NA_0)] <- 0
+
+# Step 1: Calculate pair variances
+prism.drugs_variances <- apply(prism.NA_0, 2, var)
+
+# Step 2: Determine threshold for upper n percent
+n_percent <- 0.0005
+threshold <- quantile(prism.drugs_variances, 1 - n_percent)
+
+# Step 3: Filter highly variant pairs
+highly_variant_drugs <- colnames(prism.NA_0)[which(prism.drugs_variances > threshold)]
+
+print(highly_variant_drugs)
+
+# Identify the highly variant drug names
+highly_variant_drugs <- colnames(prism.NA_0)[which(prism.drugs_variances > threshold)]
+
+# Show the filtered rows
+print(prism.treat[row.names(prism.treat) %in% highly_variant_drugs, ])
+
 ```
