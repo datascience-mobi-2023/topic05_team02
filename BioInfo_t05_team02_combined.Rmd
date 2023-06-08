@@ -2,6 +2,16 @@
 title: "R Notebook"
 output: html_notebook
 ---
+# data cleanup prism.cl
+```{r}
+#reorder prism.cl
+colnames(prism.cl)
+prism.cl_cleaned<-prism.cl[,c(1,2,13,12,16,17,6,20,7,19)]
+
+##make cell lines as row names
+rownames(prism.cl_cleaned)=prism.cl_cleaned$DepMap_ID
+prism.cl_cleaned=prism.cl_cleaned[-c(1)]
+```
 
 # special subdata extraction
 
@@ -9,10 +19,10 @@ output: html_notebook
 
 ```{r kidney_datasets}
 
-#rownumbers of prism.cl with Kidney Cancer
-which(prism.cl$disease== "Kidney Cancer")
+#rownumbers of prism.cl_cleaned with Kidney Cancer
+which(prism.cl_cleaned$disease== "Kidney Cancer")
 
-prism.cl.kidney= prism.cl[c(which(prism.cl$disease== "Kidney Cancer")),]
+prism.cl.kidney= prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Kidney Cancer")),]
 
 #Gives back all cell lines which are kidney-cancer-cell lines
 kidney_celllines<-print(prism.cl.kidney[,1])
@@ -34,8 +44,8 @@ prism.achilles.kindney<- prism.achilles[rownames(prism.achilles) %in% kidney_cel
 
 ```{r}
 #Vektoren mit einzelnen cancertypes erstellen
-unique(prism.cl$disease)
-cancertypes<- c(unique(prism.cl$disease))
+unique(prism.cl_cleaned$disease)
+cancertypes<- c(unique(prism.cl_cleaned$disease))
 ```
 
 # New cancer type specific datasets of prism.exp
@@ -47,7 +57,7 @@ prism_exp_list <- list()
 # Loop over the cancertypes vector
 for (cancer_type in cancertypes) {
   # Subset the prism.cl data frame for the current cancer type
-  cancer_df <- prism.cl[which(prism.cl$disease == cancer_type), ]
+  cancer_df <- prism.cl_cleaned[which(prism.cl_cleaned$disease == cancer_type), ]
   
   # Subset the prism.exp data frame based on the row names from the cancer_df
   prism_exp_subset <- prism.exp[rownames(cancer_df), ]
@@ -239,18 +249,6 @@ head(prism.achilles)
 range(prism.achilles, na.rm=TRUE)
 
 hist(unlist(prism.achilles), breaks = 80, main = "Histogram of prism.achilles", xlab = "gene knock-out scores")
-```
-
-## prism.cl
-
-```{r}
-
-#DATA CLEANUP
-rownames(prism.cl)= prism.cl$DepMap_ID
-prism.cl=prism.cl[-c(1)]
-prism.cl=prism.cl[,c(1,12,11,15,16,5,19,6,18)]
-
-head(prism.cl)
 ```
 
 ## prism.cnv
