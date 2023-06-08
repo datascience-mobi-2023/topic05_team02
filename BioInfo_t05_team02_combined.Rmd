@@ -6,11 +6,11 @@ output: html_notebook
 ```{r}
 #reorder prism.cl
 colnames(prism.cl)
-prism.cl_cleaned<-prism.cl[,c(1,2,13,12,16,17,6,20,7,19)]
+prism.cl<-prism.cl[,c(1,2,13,12,16,17,6,20,7,19)]
 
 ##make cell lines as row names
-rownames(prism.cl_cleaned)=prism.cl_cleaned$DepMap_ID
-prism.cl_cleaned=prism.cl_cleaned[-c(1)]
+rownames(prism.cl)=prism.cl$DepMap_ID
+prism.cl=prism.cl[-c(1)]
 ```
 
 # special subdata extraction
@@ -19,10 +19,10 @@ prism.cl_cleaned=prism.cl_cleaned[-c(1)]
 
 ```{r kidney_datasets}
 
-#rownumbers of prism.cl_cleaned with Kidney Cancer
-which(prism.cl_cleaned$disease== "Kidney Cancer")
+#rownumbers of prism.cl with Kidney Cancer
+which(prism.cl$disease== "Kidney Cancer")
 
-prism.cl.kidney= prism.cl_cleaned[c(which(prism.cl_cleaned$disease== "Kidney Cancer")),]
+prism.cl.kidney= prism.cl[c(which(prism.cl$disease== "Kidney Cancer")),]
 
 #Gives back all cell lines which are kidney-cancer-cell lines
 kidney_celllines<-print(prism.cl.kidney[,1])
@@ -44,8 +44,8 @@ prism.achilles.kindney<- prism.achilles[rownames(prism.achilles) %in% kidney_cel
 
 ```{r}
 #Vektoren mit einzelnen cancertypes erstellen
-unique(prism.cl_cleaned$disease)
-cancertypes<- c(unique(prism.cl_cleaned$disease))
+unique(prism.cl$disease)
+cancertypes<- c(unique(prism.cl$disease))
 ```
 
 # New cancer type specific datasets of prism.exp
@@ -57,7 +57,7 @@ prism_exp_list <- list()
 # Loop over the cancertypes vector
 for (cancer_type in cancertypes) {
   # Subset the prism.cl data frame for the current cancer type
-  cancer_df <- prism.cl_cleaned[which(prism.cl_cleaned$disease == cancer_type), ]
+  cancer_df <- prism.cl[which(prism.cl$disease == cancer_type), ]
   
   # Subset the prism.exp data frame based on the row names from the cancer_df
   prism_exp_subset <- prism.exp[rownames(cancer_df), ]
