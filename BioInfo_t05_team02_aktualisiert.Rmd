@@ -1,0 +1,635 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# data cleanup prism.cl
+```{r}
+#reorder prism.cl
+colnames(prism.cl)
+prism.cl<-prism.cl[,c(1,2,13,12,16,17,6,20,7,19)]
+
+##make cell lines as row names
+rownames(prism.cl)=prism.cl$DepMap_ID
+prism.cl=prism.cl[-c(1)]
+```
+
+# special subdata extraction
+
+## find kidney cancer cell lines in datasets
+
+```{r kidney_datasets}
+
+#rownumbers of prism.cl_cleaned with Kidney Cancer
+which(prism.cl$disease== "Kidney Cancer")
+
+prism.cl.kidney= prism.cl[c(which(prism.cl$disease== "Kidney Cancer")),]
+
+#Gives back all cell lines which are kidney-cancer-cell lines
+kidney_celllines<-print(prism.cl.kidney[,1])
+
+#Gives back all cell line ACh-numbers which are cancer-cell lines
+kidney_celllines_ACH <-print(rownames(prism.cl.kidney))
+
+#stores only kidney cancer cell lines from other datasets in a new one
+prism.exp.kidney <- prism.exp[rownames(prism.exp) %in% prism.cl.kidney[,1], ] 
+
+#for prism dataset
+prism.kidney <- prism[rownames(prism) %in% kidney_celllines_ACH,]
+
+#for prism.achilles
+prism.achilles.kindney<- prism.achilles[rownames(prism.achilles) %in% kidney_celllines_ACH,]
+```
+
+## Cancer type vectors
+
+```{r}
+#Vektoren mit einzelnen cancertypes erstellen
+unique(prism.cl$disease)
+cancertypes<- c(unique(prism.cl$disease))
+```
+
+# New cancer type specific datasets of prism.exp
+
+```{r}
+# Create a list to store data frames for each cancer type
+prism_exp_list <- list()
+
+# Loop over the cancertypes vector
+for (cancer_type in cancertypes) {
+  # Subset the prism.cl data frame for the current cancer type
+  cancer_df <- prism.cl[which(prism.cl$disease == cancer_type), ]
+  
+  # Subset the prism.exp data frame based on the row names from the cancer_df
+  prism_exp_subset <- prism.exp[rownames(cancer_df), ]
+  
+  # Store the subsetted prism.exp in the list with the cancer type as the list name
+  prism_exp_list[[cancer_type]] <- prism_exp_subset
+}
+
+# Access the data frames for specific cancer types from the list
+prism_exp_list[["Sarcoma"]]
+# Access other cancer types similarly
+```
+
+#prism nach cancertypes einzelne Dataframes und topvarianten (q75) Gene der jeweiligen Cancertypes
+
+```{r}
+prism_NA_0 <- prism
+prism_NA_0[is.na(prism_NA_0)] <- 0 # ersetze alle NA durch 0
+# Create a list to store data frames for each cancer type
+prism_list <- list()
+
+# Loop over the cancertypes vector
+for (cancer_type in cancertypes) {
+  # Subset the prism.cl data frame for the current cancer type
+  cancer_df <- prism.cl[which(prism.cl$disease == cancer_type), ]
+  
+  # Subset the prism.exp data frame based on the row names from the cancer_df
+  prism_subset <- prism_NA_0[rownames(cancer_df), ]
+  
+  # Store the subsetted prism.exp in the list with the cancer type as the list name
+  prism_list[[cancer_type]] <- prism_subset
+}
+
+# Access the data frames for specific cancer types from the list
+prism_list[["Sarcoma"]]
+# Access other cancer types similarly
+
+
+# Loop over the cancertypes vector
+for (cancer_type in names(prism_list)) {
+  
+  # Subset the prism.exp data frame based on the row names from the cancer_df
+  prism.var<- apply(prism,MARGIN=2,FUN=var, na.rm=TRUE)
+  prism.topvar=prism[,which(prism.var>=quantile(prism.var,probs=0.75,na.rm=TRUE))]
+  
+  prism.topvar.NA_0<-prism.topvar
+  prism.topvar.NA_0[is.na(prism.topvar.NA_0)]<-0
+  # Store the subsetted prism.exp in the list with the cancer type as the list name
+  prism.var_list[[cancer_type]] <- prism.topvar.NA_0
+}
+#retrieve 75% var-quantile for each cancer type:
+prism.var_list[["Sarcoma"]]
+
+```
+
+#Korrelation der hoch varianten Gene der spezifischen Cancertypes mit der copynumbervariation
+#silhouette score für jeden der Varianz-Vektoren
+```{r}
+silhouette_list<-list()
+for(cancer_type in names(prism.var_list)){
+  distance<-dist(t(prism.topvar.NA_0))
+  library(cluster)
+  km_var<-kmeans(x=t(prism.topvar.NA_0), centers = 530, nstart = 10)
+  s_var=silhouette(km_var$cluster,distance)
+  silhouette_list[[cancer_type]]<-s_var
+}
+plot(silhouette_list[["Sarcoma"]])
+```
+
+
+#wie kann ich eine matrix aus der Vektor-Liste mit zugehörigem cancertype machen?
+```
+
+# Data lookup
+
+## prism.exp
+
+This dataset shows the Transcripts per million of the genes (columns) for the cell lines (rows).
+
+```{r}
+head(prism.exp)
+
+dim(prism.exp)
+
+class(prism.exp)
+```
+
+```{r}
+#compute genes with highest variance in expression
+prism.exp.var<- apply(prism.exp,MARGIN=2,FUN=var)
+```
+
+#### Range of the values
+
+##### Code
+
+```{r}
+range(prism.exp)
+
+range(prism.exp.kidney)
+```
+
+##### Plot
+
+```{r, fig.width=8, fig.height=6}
+
+hist(unlist(prism.exp), breaks = 23, main = "Histogram of prism.exp", xlab = "TPM value")
+hist(unlist(prism.exp.kidney), breaks = 23, main = "Histogram of prism.exp.kidney", xlab = "TPM value")
+
+density(unlist(prism.exp))
+density(unlist(prism.exp.kidney))
+
+#sum(unlist(prism.exp) >= 0 & unlist(prism.exp) <= 1)
+
+```
+
+```{r}
+pheatmap(prism.exp.kidney,show_colnames = FALSE, main = "Heatmap of prism.exp.kidney: TPM")
+```
+
+```{r}
+#Plot for the first i genes the frequency of expression values
+for (i in 1:10) {
+  hist(prism.exp[, i], main = paste0("Histogram for column ", i), breaks = 200,)
+}
+```
+
+#### Summary for cell lines
+
+##### Code
+
+```{r}
+rm(prism.exp_row_summaries)
+
+# create a function to calculate the mean, median, and quantiles for a row/cell lines
+row_summary <- function(row) {
+  result <- c(mean(row), median(row), quantile(row, c(0.25, 0.75)), min(row), max(row), IQR(row))
+  names(result) <- c("mean", "median", "q1", "q3", "min", "max", "IQR")
+  return(result)
+}
+
+# apply the function to each row using apply()
+prism.exp.row_summaries <- apply(prism.exp, 1, row_summary)
+
+# convert the result to a data frame
+prism.exp.row_summaries_df <- as.data.frame(t(prism.exp.row_summaries))
+
+hist(prism.exp.row_summaries_df$q1, breaks = 50, xlab =  "Q25", main = "Histogram for 25%-Q of cell lines")
+hist(prism.exp.row_summaries_df$q3, breaks = 80, xlab = "Q75", main = "Histogram for 75%-Q of cell lines")
+hist(prism.exp.row_summaries_df$IQR, breaks = 80, xlab="IQR", main = "Histogram for IQR of cell lines")
+
+plot(prism.exp.row_summaries_df$IQR, ylab = "IQR" , xlab =  "cell lines", main = "Values of IQR of cell lines")
+```
+
+##### Plot
+
+```{r}
+par(plt=c(0,0,1,1)+1,  # Set plot region to the whole device
+    mar=c(2,3,4,1) + 0.1, # Set margin sizes
+    xpd=TRUE) # Allow plotting outside the plot region
+plot(prism.exp.row_summaries_df$q1, 
+     ylab = "expression values of quantiles",
+     xlab = "cell lines", 
+     main = "Values of 25%-Q and 75%-Q of cell lines", 
+     col = "red4",
+     cex = 1.5,
+     ylim = c(min(prism.exp.row_summaries_df$q1, prism.exp.row_summaries_df$q3), 
+              max(prism.exp.row_summaries_df$q1, prism.exp.row_summaries_df$q3)))
+points(prism.exp.row_summaries_df$q3, col="navy") #im gleichen Diagramm auch 75%
+```
+
+```{r, PCA_for_prism.exp}
+
+pca = prcomp(t(prism.exp), center = FALSE, scale = FALSE)
+pca$sdev
+print(pca$sdev[0:66])
+colnames(prism.exp.var %% pca$sdev[0:66])
+```
+
+## prism.treat
+
+The dataset shows for each treatment (rows) information about the drugs and dosis.
+
+```{r summary_prism.treat}
+summary(prism.treat)
+```
+
+## prism
+
+This dataset shows the treatment effects (columns) on the cell growth for each cell line (rows).
+
+```{r}
+head(prism)
+```
+
+```{r}
+hist(unlist(prism), main= "Histogram of prism", xlab="Effect of treatment on cell growth ", breaks= 50)
+```
+
+```{r}
+plot(prism[,100], xlab = "cell lines", ylab= "treatment effect", main= "Effect of one treatment on all cell lines")
+abline(h = 0, col="red")
+```
+
+```{r}
+#NA Werte looki looki
+colnames(prism)[1]
+sum(is.na(prism$"BRD-A00077618-236-07-6::0.00061034::HTS002"))
+```
+
+```{r}
+ #Berechne/plot den Mittelwert/SD jeder Spalte des Dataframes, wobei NA-Werte ignoriert werden
+
+prism.col.mean= apply(prism, 2, function(x){mean(x, na.rm= T)})
+plot(prism.col.mean, ylab= "column means", xlab="treatments", main= "prism" )
+
+prism.col.var= apply(prism, 2, function(x){var(x, na.rm= T)})
+plot(prism.col.var, ylab= "column variance", xlab="treatments", main= "prism" )
+```
+
+```{r}
+#Funktion, welche  columns nach parameter drug extrahiert in noch leeres df
+extract_columns <- function(prism, drug) {
+  col_indices <- grep(drug, colnames(prism))
+  
+# Erstelle ein neues Dataframe mit ausgewählten Spalten
+new_prism <- prism[, col_indices]
+  
+return(new_prism)
+}
+```
+
+```{r}
+#extrahiert drug name // hätte man auch mit prism.treat machen können
+drugs= unique(sapply(strsplit(colnames(prism),"::"),`[`, 1))
+
+
+```
+
+## prism.achilles
+
+This dataset shows gene knockout-scores, representing the importance of one gene for cell survival, of every gene (columns) for the cell lines (rows).
+
+```{r}
+head(prism.achilles)
+```
+
+```{r}
+range(prism.achilles, na.rm=TRUE)
+
+hist(unlist(prism.achilles), breaks = 80, main = "Histogram of prism.achilles", xlab = "gene knock-out scores")
+```
+
+## prism.cnv
+
+```{r}
+range(prism.cnv)
+```
+
+```{r}
+hist(unlist(prism.cnv), main= "Histogram of prism.cnv", xlab="copy number variation", breaks=300)
+```
+
+# Correlation between cnv & expression
+```{r}
+#rownames(prism.exp %in% prism.cnv)
+#This is because the rownames() function is used to retrieve the row names of a data frame or matrix, but the %in% operator returns a logical vector indicating which elements of the left-hand side vector are also in the right-hand side vector. The output of %in% is not a data frame or matrix, but a logical vector that does not have row names. Therefore, when you apply rownames() to the result of the %in% operation, it returns NULL indicating that there are no row names associated with the logical vector.
+#prism.exp %in% prism.cnv
+
+#identify missing rows in exp that are present in cnv
+diff_rows <- setdiff(rownames(prism.cnv), rownames(prism.exp))
+diff_rows <- unique(c(diff_rows, setdiff(rownames(prism.exp), rownames(prism.cnv))))
+print(diff_rows)
+
+#prism.cnv_corr_cleaned<-prism.cnv[-c("ACH-000309","ACH-000047","ACH-000979","ACH-001024")]
+#which(rownames(prism.cnv)=="ACH-001024")
+#85, 268, 294,307
+prism.cnv_corr_cleaned<- prism.cnv[-c(85,268,294,307),]
+
+#identify missing columns that are present in cnv but not in exp
+diff_cols <- setdiff(colnames(prism.cnv), colnames(prism.exp))
+diff_cols <- unique(c(diff_cols, setdiff(colnames(prism.exp), colnames(prism.cnv))))
+print(diff_cols)
+
+diff_cols2 <- setdiff(colnames(prism.exp), colnames(prism.cnv))
+diff_cols2<- unique(c(diff_cols, setdiff(colnames(prism.cnv), colnames(prism.exp))))
+prism.cnv_corr_cleaned<-prism.cnv_corr_cleaned[-which(colnames(prism.cnv) %in% diff_cols)]
+prism.exp_corr_cleaned<-prism.exp[-which(colnames(prism.exp) %in% diff_cols2)]
+
+#reorder rows in an ascending way
+#1.step:rownames(prism.cnv_corr_cleaned)
+prism.cnv_corr_cleaned<- prism.cnv_corr_cleaned[order(rownames(prism.cnv_corr_cleaned)),]
+prism.exp_corr_cleaned<- prism.exp_corr_cleaned[order(rownames(prism.exp_corr_cleaned)),]
+
+#reorder columns by names
+prism.cnv_corr_cleaned= prism.cnv_corr_cleaned[,colnames(prism.exp_corr_cleaned)]
+
+#colnames(prism.cnv_corr_cleaned)
+
+exp_cnv_corr<-cor(prism.exp_corr_cleaned, prism.cnv_corr_cleaned, method= c("spearman"))
+sum(exp_cnv_corr> 0.5)
+sum(exp_cnv_corr< "-0.5")
+#keine Korrelation +0.5 zwischen Expression und copy number variation
+#512969 < -0.5
+
+#correlation nur für hohe cnv berechnen:
+highcnv<- which(prism.cnv_corr_cleaned> 2, arr.ind=TRUE)
+
+exp_cnv_corr[highcnv]
+sum(exp_cnv_corr[highcnv]>0.5)
+sum(exp_cnv_corr[highcnv]< "-0.5")
+#11 Werte >0.5, 9962 Werte/17906 < -0.5
+#starke negative korrelation für hohe cnv mit exp?
+
+
+##for loop to only correlate the gene with itself and not with the other genes
+# for x in data frame1 correlate with x in data frame 2
+```
+
+# clustering of similar expression profiles in cl
+```{r}
+#dataset austauschen
+#compute genes with highest variance in expression
+prism.exp.var<- apply(prism.exp,MARGIN=2,FUN=var)
+
+#top25% with highest variance:
+q75.exp.var = quantile(prism.exp.var, probs = 0.75)   # what is the 75% quantile of the variance?
+i.topvar.exp = which(prism.exp.var >= q75.exp.var)   # all columns (genes) with variance higher than 75%
+
+prism.exp.topvar = prism.exp[,i.topvar.exp]   # only select the gene with a variance in the top 25%
+
+print(prism.exp.topvar)
+
+#k-means clustering
+km = kmeans(x=t(prism.exp.topvar), 
+            centers = 23, 
+            nstart = 10)
+#Centers=k; nstart= how many random sets should be chosen?
+
+#run k-means for k=1 to k=40 clusters, and for each k check the WSS value. How does WSS evolve with increasing k?
+##Elbow method
+#calculate within-square-distance
+wss = sapply(1:40,function(k) { 
+  kmeans(x=t(prism.exp.topvar), centers =k)$tot.withinss
+})
+plot(1:40,wss,type='b',pch=19,xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+
+
+#calculate for each tumor
+#calculate variance fpor each of the tumors
+##highly variable gene
+#run silhouette score
+
+D = dist(t(prism.exp.topvar))
+library(cluster)
+km1 = kmeans(x=t(prism.exp.topvar), centers = 2, nstart = 10)
+s = silhouette(km1$cluster,D)
+plot(s)
+
+#3 cluster: si=0.21, 23 cluster: si=0.04, 4:0.16, 2:0.33, 
+#average silhouette width für mehrere k s plotten und knick in kurve suchen
+```
+#NA-->0
+prism.kidney_NA_0<-prism.kidney
+prism.kidney_NA_0[is.na(prism.kidney_NA_0)] <- 0
+
+# Step 1: Calculate variances
+prism.kidney.cellline_var <- apply(prism.kidney_NA_0, 1, var)
+
+# Step 2: Set threshold for upper n percent
+n_percent <- 0.1
+threshold <- quantile(prism.kidney.cellline_var, 1 - n_percent)
+
+# Step 3: Filter highly variant pairs
+highly_variant_celllines <- rownames(prism.kidney_NA_0)[which(prism.kidney.cellline_var > threshold)]
+
+print(highly_variant_celllines)
+```
+
+### of drugs- kidney cancer
+
+```{r}
+# Step 1: Calculate variances
+prism.kidney.drugs_var <- apply(prism.kidney_NA_0, 2, var)
+
+# Step 2: Set threshold for upper n percent
+n_percent <- 0.0001
+threshold <- quantile(prism.kidney.drugs_var, 1 - n_percent)
+
+# Step 3: Filter highly variant pairs
+highly_variant_drugs <- colnames(prism.kidney_NA_0)[which(prism.kidney.drugs_var > threshold)]
+
+print(highly_variant_drugs)
+```
+
+#### find them in prism.treat
+
+```{r}
+
+# Identify the highly variant drug names
+highly_variant_drugs_kidney <- colnames(prism.kidney_NA_0)[which(prism.kidney.drugs_var > threshold)]
+
+# Show the filtered rows
+print(prism.treat[row.names(prism.treat) %in% highly_variant_drugs_kidney, ])
+
+rm(prism.kidney.cellline_variances)
+```
+
+#### extract dataset of prism for those cell lines
+
+```{r}
+#store the drugnames as vector
+highly_variant_drugs_kidney_drugnames<- rownames(prism.treat[row.names(prism.treat) %in% highly_variant_drugs_kidney, ])
+
+# Extract the subset of columns based on the highly variant drug names
+prism.kidney.highly_variant_drugs <- prism[, colnames(prism) %in% highly_variant_drugs_kidney_drugnames]
+
+# Print the new dataset
+print(prism.kidney.highly_variant_drugs)
+
+```
+
+#### show the cell lines with the most extreme values
+
+```{r}
+#NA=0
+prism.kidney.highly_variant_drugs.NA_0<-prism.kidney.highly_variant_drugs
+prism.kidney.highly_variant_drugs.NA_0[is.na(prism.kidney.highly_variant_drugs.NA_0)] <- 0  
+
+# Find the upper n% extreme values 
+
+
+# Extract the cell line names as vector
+
+
+```
+
+### of drugs - all cell lines
+
+```{r}
+#NA-->0
+prism.NA_0<-prism
+prism.NA_0[is.na(prism.NA_0)] <- 0
+
+# Step 1: Calculate pair variances
+prism.drugs_var <- apply(prism.NA_0, 2, var)
+
+# Step 2: Determine threshold for upper n percent
+n_percent <- 0.0005
+threshold <- quantile(prism.drugs_var, 1 - n_percent)
+
+# Step 3: Filter highly variant pairs
+highly_variant_drugs <- colnames(prism.NA_0)[which(prism.drugs_var > threshold)]
+
+print(highly_variant_drugs)
+
+# Identify the highly variant drug names
+highly_variant_drugs <- colnames(prism.NA_0)[which(prism.drugs_var > threshold)]
+
+# Show the filtered rows
+print(prism.treat[row.names(prism.treat) %in% highly_variant_drugs, ])
+```
+
+## highest prism values
+
+### for kidney cancer
+
+```{r}
+#Range of prism-values
+range(prism.kidney_NA_0)
+
+#Set threshold
+prism_threshold_kidney<- -9
+                                                
+# Create an empty vector to store the column names
+high_effect_drugs_kidney <- c()
+
+# Iterate over each column of the dataset
+for (col in colnames(prism.kidney_NA_0)) {
+  # Check if any value in the column is lower than the threshold
+  if (any(prism.kidney_NA_0[, col] < prism_threshold_kidney)) {
+    # If true, append the column name to the vector
+    high_effect_drugs_kidney <- c(high_effect_drugs_kidney, col)
+  }
+}
+
+#Show the filtered rows
+print(prism.treat[rownames(prism.treat) %in% high_effect_drugs_kidney,])
+```
+
+### for all cell lines
+
+```{r}
+#Range of prism-values
+range(prism.NA_0)
+
+#Set threshold
+prism_threshold<- -11
+                                                
+# Create an empty vector to store the column names
+high_effect_drugs <- c()
+
+# Iterate over each column of the dataset
+for (col in colnames(prism.NA_0)) {
+  # Check if any value in the column is lower than the threshold
+  if (any(prism.NA_0[, col] < prism_threshold)) {
+    # If true, append the column name to the vector
+    high_effect_drugs <- c(high_effect_drugs, col)
+  }
+}
+
+#Show the filtered rows
+print(prism.treat[rownames(prism.treat) %in% high_effect_drugs,])
+```
+
+# which cell lines are mostly effected by those drugs
+
+### for kidney cancer
+
+# copy number variation and cancer types
+
+```{r}
+# Calculate the average copy number per gene
+average_copy_number <- rowMeans(prism.cnv)
+
+# Set the threshold for high amplification
+threshold <- 1.01  # Adjust this threshold as desired
+
+# Identify genes that are highly amplified
+highly_amplified_genes <- names(average_copy_number[average_copy_number > threshold])
+
+# Print the highly amplified genes
+print(highly_amplified_genes)
+
+```
+
+**fix this! -doesn't work as expected:**
+
+```{r}
+# Create a data frame to store the results
+amplified_genes_by_cancer <- data.frame()
+
+# Iterate over each unique cancer type in prism.cl
+for (disease in unique(prism.cl$disease)) {
+  # Subset the prism.cl data frame for the current cancer type
+  cancer_subset <- prism.cl[prism.cl$disease %in% disease, ]
+  
+  # Get the cell lines associated with the current cancer type
+  cell_lines <- cancer_subset$cell_line
+  
+  # Subset the prism.cnv data frame for the cell lines of the current cancer type
+  cnv_subset <- prism.cnv[]
+  
+  # Calculate the average copy number per gene for the current cancer type
+  average_copy_number <- rowMeans(cnv_subset)
+  
+  # Define a threshold value for gene amplification for the current cancer type
+  amplification_threshold <- 1.0  # Adjust this threshold as needed
+  
+  # Identify genes that are highly amplified for the current cancer type
+  highly_amplified_genes <- names(average_copy_number[average_copy_number > amplification_threshold])
+  
+  # Create a data frame to store the results for the current cancer type
+ result <- data.frame(CancerType = disease, AmplifiedGenes = paste(highly_amplified_genes, collapse = ", "))
+
+  
+  # Append the result to the amplified_genes_by_cancer data frame
+  amplified_genes_by_cancer <- rbind(amplified_genes_by_cancer, result)
+}
+
+# Print the results
+print(amplified_genes_by_cancer)
+
+```
