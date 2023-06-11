@@ -125,7 +125,69 @@ for(cancer_type in names(prism.var_list)){
   silhouette_list[[cancer_type]]<-s_var
 }
 plot(silhouette_list[["Sarcoma"]])
+#k=530-> s=0.06
+#k=400-> s=0.05
+#k=600, n 30-> s=0.06
+
+silhouette_list<-list()
+for (cancer_type in names(prism.var_list)){
+  distance <- dist(t(prism.topvar.NA_0))
+  library(cluster)
+
+  for (n_centers in c(1,20,70,150,300,500,700,1000)) {
+    km_var<-kmeans(x=t(prism.topvar.NA_0), centers = n_centers, nstart = 5)
+    s_var=silhouette(km_var$cluster,distance)
+    silhouette_list[[cancer_type]]<-s_var
+}}
+list(n_centers,silhouette_list[["Sarcoma"]])
+  
+
 ```
+
+#selbes Prozedere mit Elbow method
+```{r}
+#run k-means for k=5,50,100,300,500,700,1000 clusters, and for each k check the WSS value. How does WSS evolve with increasing k?
+
+
+wss_list<-list()
+#calculate within-square-distance
+for(cancer_type in names(prism.var_list)){
+  wss = sapply(c(5,50,100,300,500,700,1000),function(k) { 
+    kmeans(x=t(prism.topvar.NA_0), centers =k)$tot.withinss
+})
+  wss_list[[cancer_type]]<-wss
+}
+plot(c(5,50,100,300,500,700,1000),wss_list[["Kidney Cancer"]],type='b',pch=19,xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+
+##für welchen cancer type ist dieser plot jetzt? ->for-Schleife schreiben und Liste mit den einzelnen wss-zu-k-Werten für die einzelnen cancertypes kreieren
+```
+
+#für kidney cancer
+```{r}
+prism.var_list[["Kidney Cancer"]]
+#->ca. 100 center beim clustering für 2782 Gene-> wonach wurde geclustert? wie kann ich mir den Inhalt eines Clusters anzeigen lassen?
+
+km_kidney_cluster = kmeans(t(prism.var_list[["Kidney Cancer"]]), 
+            centers = 100, 
+            nstart = 10)
+print(km_kidney_cluster)
+
+
+subset(prism.var_list[["Kidney Cancer"]], km_kidney_cluster$cluster == 30) 
+
+kmeans_fit_Kidney <- kmeans(prism.var_list[["Kidney Cancer"]], centers = 100) # Anzahl der Cluster anpassen
+head(kmeans_fit_Kidney$cluster)
+
+#datframe mit wirkstoffnamen pro cluster
+dim(subset(prism.var_list[["Kidney Cancer"]], kmeans_fit_Kidney$cluster == 70)) #für Cluster 70.
+
+#will ich, dass nach Zellinien oder nach Wirkstoffen geclustert wird?--> nach Wirkstoff, da wir ja nur in den Kidney cell lines suchen
+#warum gibt der mir so viele NA-Werte?
+#wie kann ich mir jetzt die entsprechenden mode of actions ausgeben lassen?-> drugID (colname im prism.var_list dataframe) in prism.treat suchen und prism.treat$moa ausgeben lassen
+```
+
+
 
 
 #wie kann ich eine matrix aus der Vektor-Liste mit zugehörigem cancertype machen?
