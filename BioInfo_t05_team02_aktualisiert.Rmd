@@ -96,12 +96,12 @@ prism_list[["Sarcoma"]]
 # Access other cancer types similarly
 
 
+prism.var_list<-list()
 # Loop over the cancertypes vector
 for (cancer_type in names(prism_list)) {
   
-  # Subset the prism.exp data frame based on the row names from the cancer_df
-  prism.var<- apply(prism,MARGIN=2,FUN=var, na.rm=TRUE)
-  prism.topvar=prism[,which(prism.var>=quantile(prism.var,probs=0.75,na.rm=TRUE))]
+  prism.var<- apply(prism_NA_0,MARGIN=2,FUN=var)
+  prism.topvar=prism_NA_0[rownames(cancer_df),which(prism.var>=quantile(prism.var,probs=0.75,na.rm=TRUE))]
   
   prism.topvar.NA_0<-prism.topvar
   prism.topvar.NA_0[is.na(prism.topvar.NA_0)]<-0
@@ -160,45 +160,121 @@ for(cancer_type in names(prism.var_list)){
 plot(c(5,50,100,300,500,700,1000),wss_list[["Kidney Cancer"]],type='b',pch=19,xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
 
+
+
+wss_list1<-list()
+#calculate within-square-distance
+for(cancer_type in names(prism.var_list)){
+  wss1 = sapply(35:100,function(k) { 
+    kmeans(x=t(prism.topvar.NA_0), centers =k)$tot.withinss
+})
+  wss_list1[[cancer_type]]<-wss1
+}
+plot(35:100,wss_list1[["Kidney Cancer"]],type='b',pch=19,xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+
 ##für welchen cancer type ist dieser plot jetzt? ->for-Schleife schreiben und Liste mit den einzelnen wss-zu-k-Werten für die einzelnen cancertypes kreieren
+```
+
+```{r}
+dim(exp_cnv_corr)
 ```
 
 #für kidney cancer
 ```{r}
 prism.var_list[["Kidney Cancer"]]
-#->ca. 100 center beim clustering für 2782 Gene-> wonach wurde geclustert? wie kann ich mir den Inhalt eines Clusters anzeigen lassen?
+#->ca. 54 center beim clustering für 2782 Gene-> wonach wurde geclustert? 
 
+#assigns each drug/concentration to one of 54 (peak) clusters
 km_kidney_cluster = kmeans(t(prism.var_list[["Kidney Cancer"]]), 
-            centers = 100, 
+            centers = 54, 
             nstart = 10)
 print(km_kidney_cluster)
 
+#extracts drug ID s for each cluster and stores them in kidney_cluster_list
+kidney_cluster_list<-list()
+for(i in 1:54){
+  kidney_cluster_list[[i]]<-which(km_kidney_cluster$cluster== i)
+}
+names(kidney_cluster_list[[25]])
 
-subset(prism.var_list[["Kidney Cancer"]], km_kidney_cluster$cluster == 30) 
+#extracts mode of action for drugs in each cluster and stores them in ab list
+kidney_cluster_moa<-list()
+for(i in 1:54){
+  kidney_cluster_moa[[i]]<-prism.treat$moa[rownames(prism.treat) %in% names(kidney_cluster_list[[i]])]
+}
+print(kidney_cluster_moa[[25]])
 
-kmeans_fit_Kidney <- kmeans(prism.var_list[["Kidney Cancer"]], centers = 100) # Anzahl der Cluster anpassen
-head(kmeans_fit_Kidney$cluster)
+kidney_cluster_help<-list()
+for(i in 1:54){
+  kidney_cluster_help[[i]]<-prism.treat[rownames(prism.treat) %in% names(kidney_cluster_list[[i]])]
+}
+print(kidney_cluster_help[[25]])
 
-#datframe mit wirkstoffnamen pro cluster
-dim(subset(prism.var_list[["Kidney Cancer"]], kmeans_fit_Kidney$cluster == 70)) #für Cluster 70.
 
-#will ich, dass nach Zellinien oder nach Wirkstoffen geclustert wird?--> nach Wirkstoff, da wir ja nur in den Kidney cell lines suchen
-#warum gibt der mir so viele NA-Werte?
-#wie kann ich mir jetzt die entsprechenden mode of actions ausgeben lassen?-> drugID (colname im prism.var_list dataframe) in prism.treat suchen und prism.treat$moa ausgeben lassen
+#---->treatment effect der Wirkstoffe clustert nicht nach mode of action 
+#hoher gene knockout effekt mit hohem drug effect zusammenhängend?
+#find highly correlated genes (korrelation zwischen genen finden für principal component analysis-> dann braucht man nicht beide Gene)
+#-> für expression, cnv, snv, achilles-> is there a Schnittmenge?
+
+#gibt es zelllinie die zb eine veränderte cnv (abweichung) zum mean der spalte oder ähnlichem haben
+
+#ist die negative Korrelation zwischen exp und cnv signifikant?-> proportion test (chi square test), erst: normality checken mit shapiro wilks
 ```
 
+```{r}
+#prism.kidney= prism[rownames(cl.kidney),]
+#prism.kidney.q= quantile(prism.kidney, c(0.02, 0.05, 0.1, 0.25), na.rm=T )
+#idx.prism.kidney= colnames(prism.kidney[which(apply(prism.kidney, 2, min, na.rm=T)< prism.kidney.q[1])])
+#unique(prism.treat[prism.treat$broad_id %in% idx.kidney,]$moa)
+
+#prism.kidney.q2.disease_area= which(table(prism.treat[rownames(prism.treat) %in% idx.prism.kidney,]$disease.area)!=0)
+#dotchart(prism.kidney.q2.disease_area, main= "Disease area of treatments in prism.kidney in q2", ylim=1)
 
 
+#prism.kidney.q2.phase= table(prism.treat[rownames(prism.treat) %in% idx.prism.kidney,]$phase)
+#dotchart(prism.kidney.q2.phase, main= "Phase of treatments in prism.kidney in q2")
 
-#wie kann ich eine matrix aus der Vektor-Liste mit zugehörigem cancertype machen?
+
 ```
+# list for top variant genes per cancer type and comparison between kidney cancer and rest of data set
+```{r}
+#hochvariante Gene in kidney im Vergleich zu den anderen cell lines (welche sind hier besonders variant, obwohl sie es in den anderen nicht sind/ welche sind nicht variant obwohl sie es in den anderen sind?--> topvar für kidney und topvar für alle anderen, %in% um schnittmenge zu berechnen, alle die nicht der schnittmenge entsprechen relevant für weitere Analyse)
+
+
+   prism.topvar.NA_0<-prism.topvar
+  prism.topvar.NA_0[is.na(prism.topvar.NA_0)]<-0
+  # Store the subsetted prism.exp in the list with the cancer type as the list name
+  prism.var_list[[cancer_type]] <- prism.topvar.NA_0
+
+
+# Loop over the cancertypes vector
+prism.exp.var_list<-list()
+for (cancer_type in names(prism_exp_list)) {
+  prism.exp.var<- apply(prism.exp,MARGIN=2,FUN=var, na.rm=TRUE)
+  prism.exp.topvar.list=prism.exp[rownames(cancer_df),which(prism.exp.var>=quantile(prism.exp.var,probs=0.75,na.rm=TRUE))]
+  
+  prism.exp.topvar.NA_0<-prism.exp.topvar.list
+  prism.exp.topvar.NA_0[is.na(prism.exp.topvar.NA_0)]<-0
+  # Store the subsetted prism.exp in the list with the cancer type as the list name
+  prism.exp.var_list[[cancer_type]] <- prism.exp.topvar.NA_0
+}
+
+colnames(prism.exp.var_list[["Kidney Cancer"]]) %in% colnames(prism.exp.topvar)==FALSE
+#die topvarianten Kidney-exp-Gene sind alle nicht der teil der allgemeinen topvarianten Gene!!
+```
+#list of top effective drugs for kidney
+
+
+
+
+
 
 # Data lookup
 
 ## prism.exp
 
-This dataset shows the Transcripts per million of the genes (columns) for the cell lines (rows).
-
+#This dataset shows the Transcripts per million of the genes (columns) for the cell lines (rows).
 ```{r}
 head(prism.exp)
 
@@ -214,8 +290,6 @@ prism.exp.var<- apply(prism.exp,MARGIN=2,FUN=var)
 
 #### Range of the values
 
-##### Code
-
 ```{r}
 range(prism.exp)
 
@@ -224,9 +298,9 @@ range(prism.exp.kidney)
 
 ##### Plot
 
-```{r, fig.width=8, fig.height=6}
+```{r}
 
-hist(unlist(prism.exp), breaks = 23, main = "Histogram of prism.exp", xlab = "TPM value")
+hist(unlist(prism.exp), breaks = 23, main = "Histogram of prism.exp", xlab = "TPM value", fig.width=8, fig.height=6)
 hist(unlist(prism.exp.kidney), breaks = 23, main = "Histogram of prism.exp.kidney", xlab = "TPM value")
 
 density(unlist(prism.exp))
@@ -248,8 +322,6 @@ for (i in 1:10) {
 ```
 
 #### Summary for cell lines
-
-##### Code
 
 ```{r}
 rm(prism.exp_row_summaries)
@@ -290,27 +362,79 @@ plot(prism.exp.row_summaries_df$q1,
               max(prism.exp.row_summaries_df$q1, prism.exp.row_summaries_df$q3)))
 points(prism.exp.row_summaries_df$q3, col="navy") #im gleichen Diagramm auch 75%
 ```
-
-```{r, PCA_for_prism.exp}
-
+#PCA_for_prism.exp
+```{r}
+library(pls)
 pca = prcomp(t(prism.exp), center = FALSE, scale = FALSE)
 pca$sdev
 print(pca$sdev[0:66])
 colnames(prism.exp.var %% pca$sdev[0:66])
+biplot(pca)
+
 ```
+
+```{r}
+library(umap)
+library(lsa)
+library(ggplot2)
+
+prism.umap<-umap(prism_NA_0)
+head(prism.umap$layout, 3)
+
+plot.iris<- function(x, labels,
+          main="A UMAP visualization of the Iris dataset",
+          colors=c("#ff7f00", "#e377c2", "#17becf"),
+          pad=0.1, cex=0.6, pch=19, add=FALSE, legend.suffix="",
+          cex.main=1, cex.legend=0.85) {
+ 
+   layout <- x
+   if (is(x, "umap")) {
+     layout <- x$layout
+   } 
+   
+   xylim <- range(layout)
+   xylim <- xylim + ((xylim[2]-xylim[1])*pad)*c(-0.5, 0.5)
+   if (!add) {
+     par(mar=c(0.2,0.7,1.2,0.7), ps=10)
+     plot(xylim, xylim, type="n", axes=F, frame=F)
+     rect(xylim[1], xylim[1], xylim[2], xylim[2], border="#aaaaaa", lwd=0.25)  
+   }
+   points(layout[,1], layout[,2], col=colors[as.integer(labels)],
+          cex=cex, pch=pch)
+   mtext(side=3, main, cex=cex.main)
+ 
+   labels.u <- unique(labels)
+   legend.pos <- "topleft"
+   legend.text <- as.character(labels.u)
+   if (add) {
+     legend.pos <- "bottomleft"
+     legend.text <- paste(as.character(labels.u), legend.suffix)
+   }
+ 
+   legend(legend.pos, legend=legend.text, inset=0.03,
+          col=colors[as.integer(labels.u)],
+          bty="n", pch=pch, cex=cex.legend)
+ }
+
+
+plot.iris(prism.umap)
+
+#remove NA s from prism.exp_list
+
+```
+
 
 ## prism.treat
 
-The dataset shows for each treatment (rows) information about the drugs and dosis.
+#The dataset shows for each treatment (rows) information about the drugs and dosis.
 
-```{r summary_prism.treat}
+```{r}
 summary(prism.treat)
 ```
 
 ## prism
 
-This dataset shows the treatment effects (columns) on the cell growth for each cell line (rows).
-
+#This dataset shows the treatment effects (columns) on the cell growth for each cell line (rows).
 ```{r}
 head(prism)
 ```
@@ -361,7 +485,7 @@ drugs= unique(sapply(strsplit(colnames(prism),"::"),`[`, 1))
 
 ## prism.achilles
 
-This dataset shows gene knockout-scores, representing the importance of one gene for cell survival, of every gene (columns) for the cell lines (rows).
+#This dataset shows gene knockout-scores, representing the importance of one gene for cell survival, of every gene (columns) for the cell lines (rows).
 
 ```{r}
 head(prism.achilles)
@@ -385,10 +509,6 @@ hist(unlist(prism.cnv), main= "Histogram of prism.cnv", xlab="copy number variat
 
 # Correlation between cnv & expression
 ```{r}
-#rownames(prism.exp %in% prism.cnv)
-#This is because the rownames() function is used to retrieve the row names of a data frame or matrix, but the %in% operator returns a logical vector indicating which elements of the left-hand side vector are also in the right-hand side vector. The output of %in% is not a data frame or matrix, but a logical vector that does not have row names. Therefore, when you apply rownames() to the result of the %in% operation, it returns NULL indicating that there are no row names associated with the logical vector.
-#prism.exp %in% prism.cnv
-
 #identify missing rows in exp that are present in cnv
 diff_rows <- setdiff(rownames(prism.cnv), rownames(prism.exp))
 diff_rows <- unique(c(diff_rows, setdiff(rownames(prism.exp), rownames(prism.cnv))))
@@ -417,26 +537,28 @@ prism.exp_corr_cleaned<- prism.exp_corr_cleaned[order(rownames(prism.exp_corr_cl
 #reorder columns by names
 prism.cnv_corr_cleaned= prism.cnv_corr_cleaned[,colnames(prism.exp_corr_cleaned)]
 
-#colnames(prism.cnv_corr_cleaned)
+cor_g<-matrix()
+for (g in colnames(prism.exp_corr_cleaned)) {  
+  valse_g = prism.exp_corr_cleaned[,colnames(prism.exp_corr_cleaned) == g]  
+  valsc_g = prism.cnv_corr_cleaned[,colnames(prism.cnv_corr_cleaned) == g]  
+  cor_g[[g]]=cor(valse_g, valsc_g, method= c("spearman"))  
+}  
+final_cor = t(data.frame(cor_g))
 
-exp_cnv_corr<-cor(prism.exp_corr_cleaned, prism.cnv_corr_cleaned, method= c("spearman"))
-sum(exp_cnv_corr> 0.5)
-sum(exp_cnv_corr< "-0.5")
-#keine Korrelation +0.5 zwischen Expression und copy number variation
-#512969 < -0.5
+hist(final_cor)
 
-#correlation nur für hohe cnv berechnen:
-highcnv<- which(prism.cnv_corr_cleaned> 2, arr.ind=TRUE)
+#korrelationswerte für kidney cell lines
 
-exp_cnv_corr[highcnv]
-sum(exp_cnv_corr[highcnv]>0.5)
-sum(exp_cnv_corr[highcnv]< "-0.5")
-#11 Werte >0.5, 9962 Werte/17906 < -0.5
-#starke negative korrelation für hohe cnv mit exp?
+cor_kidney<-matrix()
+for (g in colnames(prism.exp_corr_cleaned)) {  
+  valse_g_kidney = prism.exp_corr_cleaned[rownames(prism_exp_list[["Kidney Cancer"]]),colnames(prism.exp_corr_cleaned) == g]  
+  valsc_g_kidney = prism.cnv_corr_cleaned[rownames(prism_exp_list[["Kidney Cancer"]]),colnames(prism.cnv_corr_cleaned) == g]  
+  cor_kidney[[g]]=cor(valse_g_kidney, valsc_g_kidney, method= c("spearman"))  
+}  
+kidney_cor = t(data.frame(cor_kidney))
+hist(kidney_cor)
 
 
-##for loop to only correlate the gene with itself and not with the other genes
-# for x in data frame1 correlate with x in data frame 2
 ```
 
 # clustering of similar expression profiles in cl
