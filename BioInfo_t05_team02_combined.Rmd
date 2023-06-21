@@ -356,9 +356,13 @@ head(prism.achilles)
 
 ```{r}
 range(prism.achilles, na.rm=TRUE)
+quantile(unlist(prism.achilles), probs = c(0.5,0.10), na.rm= TRUE)
 
-hist(unlist(prism.achilles), breaks = 80, main = "Histogram of prism.achilles", xlab = "gene knock-out scores")
-abline(v=-2, col="red")
+
+hist(unlist(prism.achilles), breaks = 20, main = "Histogram of prism.achilles", xlab = "gene knock-out scores")
+abline(v= 0 , col="red")
+
+pheatmap(prism.achilles.kindney_NA_0)
 ```
 
 ## prism.cl
@@ -530,42 +534,30 @@ prism.exp.kidney_high_effect_drugs_targetgenes<-print(prism.exp.kidney[rownames(
 #subset of prism.exp for the kidney cancer cell lines but only for the genes which are effected by inhibiting drugs (maybe: target genes of drugs)
 ```
 
-#### Comparison with knock-out scores 
-
-Shows all kidney cancer gene knock-out-scores which are part of the list of target genes of high inhibiting drugs.
+#### Comparison with knock-out scores
 
 ```{r}
 #set NA to 0
 prism.achilles.kindney_NA_0<-prism.achilles.kindney
 prism.achilles.kindney_NA_0[is.na(prism.achilles.kindney_NA_0)] <- 0
 
-# Retrieve genes with matching column names from prism.achilles.kindney_NA_0
-prism.achilles.kidney_high_inhibiting_drugs <- prism.achilles.kindney_NA_0[, colnames(prism.achilles.kindney_NA_0) %in% colnames(prism.exp.kidney_high_effect_drugs_targetgenes)]
-
-# Print the matching genes
-prism.achilles.kidney_high_inhibiting_drugs
-
-
-# Set the threshold
-prism.achilles_threshold_kidney <- -2
+# Set the threshold #chunk26 #
+prism.achilles_threshold_kidney <- quantile(prism.achilles[prism.achilles != 0], probs = c(0.01), na.rm = TRUE)
 
 # Find data points smaller than the threshold
-indices <- which(prism.achilles.kidney_high_inhibiting_drugs 
-                 < prism.achilles_threshold_kidney, 
+indices <- which(prism.achilles.kindney_NA_0 < prism.achilles_threshold_kidney, 
                  arr.ind = TRUE)
 
 # Extract the row and column names
-row_names <- row.names(prism.achilles.kidney_high_inhibiting_drugs)[indices[, 1]]
-col_names <- colnames(prism.achilles.kidney_high_inhibiting_drugs)[indices[, 2]]
+row_names <- row.names(prism.achilles.kindney_NA_0)[indices[, 1]]
+col_names <- colnames(prism.achilles.kindney_NA_0)[indices[, 2]]
 
 # Print the results
-prism.achilles.kidney.high_essential_genes <- data.frame(Row = row_names, Column = col_names, Value = prism.achilles.kidney_high_inhibiting_drugs[indices])
+prism.achilles.kidney.high_essential_genes <- data.frame(cl = row_names, gene = col_names, "knock-out score" = prism.achilles.kindney_NA_0[indices])
 
 #
 prism.achilles.kidney.high_essential_genes
 ```
-
-Q\@A: What can we do with this \^?
 
 #### Search for high level gene expression
 
@@ -573,47 +565,30 @@ Q\@A: What can we do with this \^?
 #Check expression value distribution of prism.exp.kidney_high_effect_drugs_targetgenes
 hist(unlist(prism.exp.kidney_high_effect_drugs_targetgenes), breaks = 50, main= "Verteilung von prism.exp.kidney_high_effect_drugs_targetgenes")
 
+#mean vs. quantile
+mean(unlist(prism.exp.kidney_high_effect_drugs_targetgenes[prism.exp.kidney_high_effect_drugs_targetgenes !=0]))
+quantile(unlist(prism.exp.kidney_high_effect_drugs_targetgenes[prism.exp.kidney_high_effect_drugs_targetgenes !=0]), probs = 0.5)
+
 # Add a vertical line for the mean & Exclude genes with zero expression
 ###Q@A: Is that possible/does it make sense?
-abline(v = mean(unlist(prism.exp.kidney_high_effect_drugs_targetgenes[prism.exp.kidney_high_effect_drugs_targetgenes != 0])))
+abline(v = c(
+  mean(unlist(prism.exp.kidney_high_effect_drugs_targetgenes[prism.exp.kidney_high_effect_drugs_targetgenes != 0])),
+  quantile(unlist(prism.exp.kidney_high_effect_drugs_targetgenes[prism.exp.kidney_high_effect_drugs_targetgenes != 0]), probs = 0.5),
+  mean(unlist(prism.exp.kidney_high_effect_drugs_targetgenes)),
+  quantile(unlist(prism.exp.kidney_high_effect_drugs_targetgenes), probs = 0.5)
+),
+col = c("lightblue", "blue", "lightgreen", "darkgreen")
+)
+
 
 #show value for the abline
-text(mean(unlist(prism.exp.kidney_high_effect_drugs_targetgenes[prism.exp.kidney_high_effect_drugs_targetgenes != 0])), par("usr")[4], labels = paste("Mean:", round(mean(unlist(prism.exp.kidney_high_effect_drugs_targetgenes[prism.exp.kidney_high_effect_drugs_targetgenes != 0])), 2)), pos = 1)
+#text( function, par("usr")[4], labels = paste("Text:", round(Function), 2)), pos = 1)
 
 # extract all genes with high expression lvl
 #prism.exp.kidney_high_effect_drugs_targetgenes_high_gene_exp_lvl <- prism.exp.kidney_high_effect_drugs_targetgenes[prism.exp.kidney_high_effect_drugs_targetgenes >= mean(unlist(prism.exp.kidney_high_effect_drugs_targetgenes))] 
 
-prism.exp.kidney_high_effect_drugs_targetgenes_high_gene_exp_lvl
+
 ```
-
-### for all cell lines
-
-```{r}
-#Range of prism-values
-range(prism.NA_0)
-
-#Set threshold
-prism_threshold<- -11
-                                                
-# Create an empty vector to store the column names
-high_effect_drugs <- c()
-
-# Iterate over each column of the dataset
-for (col in colnames(prism.NA_0)) {
-  # Check if any value in the column is lower than the threshold
-  if (any(prism.NA_0[, col] < prism_threshold)) {
-    # If true, append the column name to the vector
-    high_effect_drugs <- c(high_effect_drugs, col)
-  }
-}
-
-#Show the filtered rows
-print(prism.treat[rownames(prism.treat) %in% high_effect_drugs,])
-```
-
-## which cell lines are mostly effected by those drugs
-
-### for kidney cancer
 
 # Correlation
 
