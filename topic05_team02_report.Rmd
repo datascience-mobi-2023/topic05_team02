@@ -1,0 +1,287 @@
+---
+title: "topic05_team02_report"
+author: "Jessica Albrecht, Franca Klaeren & Arne Weigel"
+date: "2023-07-05"
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+    df_print: paged
+  pdf_document:
+    toc: yes
+    toc_depth: 4
+---
+
+# Report
+
+## Introduction
+
+Beschreibung der Fragestellung, Vorstellung der publizierten Vorarbeiten,\...
+
+## Material and Methods
+
+```{r load_datasets, include=FALSE}
+load("./cellline_datasets.rda")
+load("./prism_datasets.rda")
+```
+
+The data we used for the project was published by XXXX.
+
+bitte hier die Referenzen der Publikationen/Webseiten, aus denen die Daten stammen, und die Beschreibung der Methoden, die benutzt wurden.
+
+### data cleanup
+
+Before we started to work with our data sets, we first had to do some data cleanup. For that we generated some sub-data sets for the 17 kidney cancer cell lines and for some areas of application we needed to set NA-values to zero.
+
+```{r cleanup_cols_prism.cl, include=FALSE}
+#clean up of columns of prism.cl
+rownames(prism.cl)= prism.cl$DepMap_ID
+prism.cl=prism.cl[-c(1)]
+prism.cl=prism.cl[,c(1,12,11,15,16,5,19,6,18)]
+```
+
+```{r kidney_cancer_subsets, include=FALSE}
+#rownumbers of prism.cl with Kidney Cancer
+which(prism.cl$disease== "Kidney Cancer")
+
+prism.cl.kidney= prism.cl[c(which(prism.cl$disease== "Kidney Cancer")),]
+
+#Gives back all cell lines which are kidney-cancer-cell lines
+kidney_celllines<-print(prism.cl.kidney[,1])
+
+#Gives back all cell line ACh-numbers which are cancer-cell lines
+kidney_celllines_ACH <-rownames(prism.cl.kidney)
+
+#stores only kidney cancer cell lines from other datasets in a new one
+prism.exp.kidney <- prism.exp[kidney_celllines_ACH, ]
+
+#for prism dataset
+prism.kidney <- prism[rownames(prism) %in% kidney_celllines_ACH,]
+
+#for prism.achilles
+prism.achilles.kidney<- prism.achilles[rownames(prism.achilles) %in% kidney_celllines_ACH,]
+```
+
+```{r NA_0, include=FALSE}
+#set NA to 0
+prism_NA_0 <- prism
+prism_NA_0[is.na(prism_NA_0)] <- 0 
+
+prism.kidney_NA_0<-prism.kidney
+prism.kidney_NA_0[is.na(prism.kidney_NA_0)] <- 0
+
+
+prism.achilles.kidney_NA_0<-prism.achilles.kidney
+prism.achilles.kidney_NA_0[is.na(prism.achilles.kidney_NA_0)] <- 0
+```
+
+## Results
+
+Darstellung der Ergebnisse und Abbildungen
+
++------------------------------------------------------------+----------------+
+| Must-haves                                                 |                |
++============================================================+================+
+| descriptive statistics including graphical representations | mean           |
+|                                                            |                |
+|                                                            | median         |
+|                                                            |                |
+|                                                            | **quantiles**  |
+|                                                            |                |
+|                                                            | **Histograms** |
+|                                                            |                |
+|                                                            | range          |
++------------------------------------------------------------+----------------+
+| dimension reduction analysis                               | PCA            |
++------------------------------------------------------------+----------------+
+| statistical tests                                          |                |
++------------------------------------------------------------+----------------+
+| linear regression                                          |                |
++------------------------------------------------------------+----------------+
+
+### descriptive statistics
+
+For a quick overview of the content we printed the headlines of the data sets for example for prism.cl.
+
+```{r head_prism.cl, echo=FALSE}
+head(prism.cl)
+```
+
+We looked for the data distribution for prism.exp, prism.achilles,prism.cnv and prism which seemed to be not normal distributed. This conclusion was confirmed by a Anderson-Darling normality test (p-value \< 2.2e-16).
+
+```{r distribution_histograms, echo=FALSE}
+par(mfrow=c(2,2))
+hist(unlist(prism), breaks = 60, main = "Histogram of prism", xlab = "treatment effect values")
+
+hist(unlist(prism.exp), breaks = 60, main = "Histogram of prism.exp", xlab = "transcripts per million")
+
+hist(unlist(prism.achilles), breaks = 60,main = "Histogram of prism.achilles", xlab = "gene knockout-scores")
+
+hist(unlist(prism.cnv), main= "Histogram of prism.cnv", xlab="copy number variation", breaks=60)
+```
+
+```{r check_normal_distribution, include=FALSE}
+#values as vectors
+prism_vector <- unlist(prism)
+prism.achilles_vector<-unlist(prism.achilles)
+prism.exp_vector<- unlist(prism.exp)
+prism.cnv_vector<-unlist(prism.cnv)
+
+# Perform the Anderson-Darling normality test
+library(nortest)
+hyp_test_prism_distribution<- ad.test(prism_vector)
+hyp_test_prism_distribution
+
+hyp_test_prism.achilles_distribution<-ad.test(prism.achilles_vector)
+hyp_test_prism.achilles_distribution
+
+hyp_test_prism.exp_vector<-ad.test(prism.exp_vector)
+hyp_test_prism.exp_vector
+
+hyp_test_prism.cnv_vector<-ad.test(prism.cnv_vector)
+hyp_test_prism.cnv_vector
+```
+
+The boxplot of the data shows small inter quartile ranges for prism.cnv and prism.achilles and a bigger range for the prism data set. This means we have more spreaded values for prism than for the other two data sets.
+
+```{r boxplot_prism_cnv_ach, echo=FALSE}
+boxplot(
+  prism_vector,prism.cnv_vector, prism.achilles_vector,
+  outline = FALSE,
+  names=c("prism", "prism.cnv", "prism.achilles"))
+```
+
+### Do some high effective drugs target essential genes of kidney cancer?
+
+#### Which genes are essential for kidney cancer cell lines?
+
+```{r essential_genes, include=FALSE}
+#old~new
+#cnv~exp
+#exp~ach
+#identify missing rows in exp that are present in achilles
+diff_rows <- setdiff(rownames(prism.exp.kidney), rownames(prism.achilles.kidney))
+diff_rows <- unique(c(diff_rows, setdiff(rownames(prism.achilles.kidney), rownames(prism.exp.kidney))))
+#print(diff_rows)
+
+#prism.exp.kidney_corr_cleaned<-prism.exp.kidney
+#"ACH-000046" "ACH-000171" "ACH-000313" "ACH-000428" "ACH-000429" "ACH-000457"
+#which(rownames(prism.exp.kidney)=="ACH-000457")
+#2,4,7,9,10,12
+prism.exp.kidney_corr_cleaned<- prism.exp.kidney[-c(2,4,7,9,10,12),]
+
+#identify missing columns that are present in prism.exp.kidney_corr_cleaned but not in achilles
+diff_cols <- setdiff(colnames(prism.exp.kidney), colnames(prism.achilles.kidney))
+diff_cols <- unique(c(diff_cols, setdiff(colnames(prism.achilles.kidney), colnames(prism.exp.kidney))))
+#print(diff_cols)
+
+
+diff_cols2 <- setdiff(colnames(prism.achilles.kidney), colnames(prism.exp.kidney))
+diff_cols2<- unique(c(diff_cols, setdiff(colnames(prism.exp.kidney), colnames(prism.achilles.kidney))))
+prism.exp.kidney_corr_cleaned<-prism.exp.kidney_corr_cleaned[-which(colnames(prism.exp.kidney) %in% diff_cols)]
+prism.achilles.kidney_corr_cleaned<-prism.achilles.kidney[-which(colnames(prism.achilles.kidney) %in% diff_cols2)]
+
+#reorder rows in an ascending way
+#1.step:rownames(prism.exp.kidney_corr_cleaned)
+prism.exp.kidney_corr_cleaned<- prism.exp.kidney_corr_cleaned[order(rownames(prism.exp.kidney_corr_cleaned)),]
+prism.achilles.kidney_corr_cleaned<- prism.achilles.kidney_corr_cleaned[order(rownames(prism.achilles.kidney_corr_cleaned)),]
+
+#reorder columns by names
+prism.exp.kidney_corr_cleaned= prism.exp.kidney_corr_cleaned[,colnames(prism.achilles.kidney_corr_cleaned)]
+
+correlation_ach_exp_kidney<-matrix()
+for (g in colnames(prism.achilles.kidney_corr_cleaned)) {  
+  valse_g_ach_exp_kidney = prism.achilles.kidney_corr_cleaned[,colnames(prism.achilles.kidney_corr_cleaned) == g]  
+  valsc_g_ach_exp_kidney = prism.exp.kidney_corr_cleaned[,colnames(prism.exp.kidney_corr_cleaned) == g]  
+  correlation_ach_exp_kidney[[g]]=cor(valse_g_ach_exp_kidney, valsc_g_ach_exp_kidney, method= c("spearman"))  
+}  
+final_correlation_ach_exp_kidney = t(data.frame(correlation_ach_exp_kidney))
+
+colnames_pos_corr <- colnames(final_correlation_ach_exp_kidney)[which(final_correlation_ach_exp_kidney >= quantile(final_correlation_ach_exp_kidney, 0.98, na.rm = TRUE))]
+
+colnames_neg_corr <- colnames(final_correlation_ach_exp_kidney)[which(final_correlation_ach_exp_kidney <= quantile(final_correlation_ach_exp_kidney, 0.02, na.rm = TRUE))]
+
+high_corr_genenames<-c(colnames_neg_corr, colnames_pos_corr)
+```
+
+```{r correlation_histogram, echo=FALSE}
+hist(correlation_ach_exp_kidney, breaks = 40)
+abline(v=c(-0.9,0.9))
+```
+
+#### Which drugs do have a high negative effect on the cell lines?
+
+```{r neg_effect_drugs, include=FALSE}
+#Set threshold depending on the distribution of prism 
+prism.kidney_threshold<- quantile(prism.kidney, 0.02, na.rm=TRUE)
+
+                                                
+# Create an empty vector to store the column names
+high_effect_drugs_kidney <- c()
+
+# Iterate over each column of the dataset
+for (col in colnames(prism.kidney_NA_0)) {
+  # Check if any value in the column is lower than the threshold
+  if (any(prism.kidney_NA_0[, col] <= prism.kidney_threshold)) {
+    # If true, append the column name to the vector
+    high_effect_drugs_kidney <- c(high_effect_drugs_kidney, col)
+  }
+}
+#subset of prism.treat for drugs with inhibiting impact on kidney cancer cells
+#Show/store the filtered rows
+prism.treat.kidney.high_effect_drugs<-print(prism.treat[rownames(prism.treat) %in% high_effect_drugs_kidney,])
+
+
+prism.treat.kidney.high_effect_drugs$target <- as.character(prism.treat.kidney.high_effect_drugs$target)
+
+##Create a vector with all targets of the high_effect drugs
+
+# Extract all targets as a single character vector
+targetgenes_high_effect_drugs_kidney <- 
+  unlist(strsplit(prism.treat.kidney.high_effect_drugs$target, ", "))
+
+# Remove any leading/trailing white spaces and NA values
+targetgenes_high_effect_drugs_kidneys <- trimws(targetgenes_high_effect_drugs_kidney)
+targetgenes_high_effect_drugs_kidney <- targetgenes_high_effect_drugs_kidney[!is.na(targetgenes_high_effect_drugs_kidney)]
+
+# Print the resulting vector of targets
+#print(targetgenes_high_effect_drugs_kidney)
+```
+
+```{r venn_genes, echo=FALSE}
+# Create a list of the gene names in each vector
+set1 <- unique(high_corr_genenames)
+set2 <- unique(targetgenes_high_effect_drugs_kidney)
+
+list_venn1<-list(set1, set2)
+
+# Create the Venn diagram
+library(VennDiagram)
+venn1<-venn.diagram(
+  list_venn1 ,
+  category.names = c("essential genes(high corr. btw. prism.ach & prism.exp)", "target genes of high effective drugs "),
+  fill = c("lightblue", "steelblue4"),
+  main ="venn diagram",
+  main.fontface= "bold",
+  sub = "essential genes vs.target genes of high effective drugs ",
+  col= "white",
+  cat.pos= 9,
+  filename = NULL
+)
+grid.newpage()
+grid.draw(venn1)
+```
+
+These genes are essential genes as well as targets of high inhibiting drugs:
+
+```{r intersect_genes, echo=FALSE}
+#find the genes in the intersection
+intersect_data <- intersect(set1, set2)
+intersect_data
+```
+
+## Discussion
+
+kurze Zusammenfassung der Ergebnisse, Diskussion über gewonnen Erkenntnisse, Einschränkungen in der Analyse
+
+## Referenzen
