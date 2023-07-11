@@ -10,7 +10,7 @@ prism.cl<-prism.cl[,c(1,2,13,12,16,17,6,20,7,19)]
 
 ##make cell lines as row names
 rownames(prism.cl)=prism.cl$DepMap_ID
-prism.cl=prism.cl[-c(1)]
+##remove!!!!!   prism.cl=prism.cl[-c(1)]
 ```
 
 # special subdata extraction
@@ -362,60 +362,54 @@ plot(prism.exp.row_summaries_df$q1,
               max(prism.exp.row_summaries_df$q1, prism.exp.row_summaries_df$q3)))
 points(prism.exp.row_summaries_df$q3, col="navy") #im gleichen Diagramm auch 75%
 ```
-#PCA_for_prism.exp
+#PCA for gene expression
 ```{r}
-#Vektor mit Zelllinien pro cancertype für colouring
-celllines <- list()
-# Loop over the cancertypes vector
-for (cancertype in cancertypes) {
-  # Subset the prism.cl data frame for the current cancer type
-  cancer_df <- rownames(prism.cl[which(prism.cl$disease == cancertype), ])
-  
-  # Subset the prism.exp data frame based on the row names from the cancer_df
-  celllines[[cancertype]] <- cancer_df
-  
-}
-#print cellline numbers for a specific cancer
-celllines[["cancertype"]]
-
-library(pls)
-install.packages ('ggfortify')
-library(ggfortify)
-install.packages("factoextra")
-library(factoextra)
-#PCA over the genes in exp
-pca_exp_genes = prcomp(t(prism.exp), center = FALSE, scale = FALSE)
-pca_cnv_genes= prcomp(t(prism.cnv), center= FALSE, scale= FALSE)
-autoplot(pca_cnv,
-         data= t(prism.cnv),
-         colour= rainbow(27562))
-#PCA over the cell lines in exp
 pca_exp_celllines=prcomp(prism.exp, center=FALSE, scale=FALSE)
-autoplot(pca_exp_celllines,
-         data=prism.exp,
-         colour= as.factor(rainbow(celllines)))
-  #liste kann nicht in Integer umgewandelt werden-> kann ich die Daten anders speichern?
-  
-#for(cellline in cellines)
-  #rainbow(sum(cellline))
+celllines.exp=prism.cl[rownames(prism.cl) %in% rownames(prism.exp),]
+# Make another df
+toplot.exp = as.data.frame(pca_exp_celllines$x) 
+toplot.exp$DepMap_ID = rownames(toplot.exp)
 
-#theme(legend.title = element_blank()) +
-#guides(colour = guide_legend(title = rownames(prism.exp)))
-#geom_text(aes(x = PC1, y = PC2, label = rownames(prism.exp)), size = 3)
+plot_wCells.exp = merge(toplot.exp, celllines.exp, by = "DepMap_ID")
 
-
-length(as.factor(prism.cl[-c(48,131,460,472),]$disease))
-#rainbow(23,as.factor(prism.cl[-c(48,131,460,472),]$disease
-#identify missing rows in exp that are present in cl
-unique(c(setdiff(rownames(prism.cl), rownames(prism.exp)), setdiff(rownames(prism.exp), rownames(prism.cl))))
-which(rownames(prism.cl)=="ACH-001024")
-#"ACH-000047","ACH-000309", "ACH-000979","ACH-001024"
-
-
-#autoplot(prcomp(df[,!(colnames(df) == "Category")]), data = df, color = "Category")
-rainbow(477)
-
+# Plot
+ggplot(plot_wCells.exp, 
+       aes(x = PC1, y = PC2, color = lineage)) +
+  geom_point() 
 ```
+#PCA for copy number variation
+```{r}
+pca_cnv_celllines=prcomp(prism.cnv, center=FALSE, scale=FALSE)
+celllines.cnv=prism.cl[rownames(prism.cl) %in% rownames(prism.cnv),]
+# Make another df
+toplot.cnv = as.data.frame(pca_cnv_celllines$x) 
+toplot.cnv$DepMap_ID = rownames(toplot.cnv)
+
+plot_wCells.cnv = merge(toplot.cnv, celllines.cnv, by = "DepMap_ID")
+
+# Plot
+ggplot(plot_wCells.cnv, 
+       aes(x = PC1, y = PC2, color = lineage)) +
+  geom_point()
+```
+#PCA for knockout scores
+```{r}
+achilles_NA_0 <- prism.achilles
+achilles_NA_0[is.na(achilles_NA_0)] <- 0 # ersetze alle NA durch 0
+pca_achilles_celllines=prcomp(achilles_NA_0, center=FALSE, scale=FALSE)
+celllines.achilles=prism.cl[rownames(prism.cl) %in% rownames(prism.achilles),]
+# Make another df
+toplot.achilles = as.data.frame(pca_achilles_celllines$x) 
+toplot.achilles$DepMap_ID = rownames(toplot.achilles)
+
+plot_wCells.achilles = merge(toplot.achilles, celllines.achilles, by = "DepMap_ID")
+
+# Plot
+ggplot(plot_wCells.achilles, 
+       aes(x = PC1, y = PC2, color = lineage)) +
+  geom_point()
+```
+
 ## prism.treat
 
 #The dataset shows for each treatment (rows) information about the drugs and dosis.
