@@ -3,13 +3,13 @@ title: "topic05_team02_report"
 author: "Jessica Albrecht, Franca Klaeren & Arne Weigel"
 date: "2023-07-05"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: 4
   html_document:
     toc: yes
     toc_depth: '4'
     df_print: paged
-  pdf_document:
-    toc: yes
-    toc_depth: 4
 editor_options: 
   markdown: 
     wrap: sentence
@@ -23,16 +23,16 @@ Beschreibung der Fragestellung, Vorstellung der publizierten Vorarbeiten,\...
 
 ## Material and Methods
 
-```{r load_datasets, eval=FALSE, include=FALSE}
-load("/cellline_datasets.rda")
-load("/prism_datasets.rda")
+```{r load_datasets, include=FALSE}
+load("C:/Users/Jessica Albrecht/Desktop/Uni/BioInfo Project/cellline_datasets.rda")
+load("C:/Users/Jessica Albrecht/Desktop/Uni/BioInfo Project//prism_datasets.rda")
 ```
 
 The data we used for the project was published by XXXX.
 
 bitte hier die Referenzen der Publikationen/Webseiten, aus denen die Daten stammen, und die Beschreibung der Methoden, die benutzt wurden.
 
-### data What data do we have and what does it tell us? 
+#### What data do we have and what does it tell us?
 
 prism.exp: This dataset shows the Transcripts per million of the genes (columns) for the cell lines (rows).
 prism.treat: The dataset shows for each treatment (rows) information about the drugs and dosis.
@@ -40,7 +40,7 @@ prism: This dataset shows the treatment effects (columns) on the cell growth for
 prism.achilles: This dataset shows gene knockout-scores, representing the importance of one gene for cell survival, of every gene (columns) for the cell lines (rows).
 prism.cnv:
 
-### \### data cleanup
+### data cleanup
 
 Before we started to work with our data sets, we first had to do some data cleanup.
 For that we generated some sub-data sets for the 17 kidney cancer cell lines and for some areas of application we needed to set NA-values to zero.
@@ -88,18 +88,12 @@ prism.achilles.kidney_NA_0<-prism.achilles.kidney
 prism.achilles.kidney_NA_0[is.na(prism.achilles.kidney_NA_0)] <- 0
 ```
 
-#### creation of a vector with the different cancer types
-
-```{r}
+```{r cancer_type_vector, include=FALSE}
 unique(prism.cl$disease)
 cancertypes<- c(unique(prism.cl$disease))
 ```
 
-#### Highly variant gene expressions
-
-#new cancer type specific datasets of prism
-
-```{r include=FALSE}
+```{r prism_list, include=FALSE}
 # Create a list to store data frames for each cancer type
 prism_list <- list()
 
@@ -119,9 +113,7 @@ prism_list[["Sarcoma"]]
 # Access other cancer types similarly
 ```
 
-# list for top variant drugs per cancer type
-
-```{r include=FALSE}
+```{r top_var_list, include=FALSE}
 prism.var_list<-list()
 # Loop over the cancertypes vector
 for (cancer_type in names(prism_list)) {
@@ -138,29 +130,30 @@ for (cancer_type in names(prism_list)) {
 prism.var_list[[cancer_type]]
 ```
 
+```{r prism_exp_list, include=FALSE}
+# Create a list to store data frames for each cancer type
+prism_exp_list <- list()
+
+# Loop over the cancertypes vector
+for (cancer_type in cancertypes) {
+  # Subset the prism.cl data frame for the current cancer type
+  cancer_df <- prism.cl[which(prism.cl$disease == cancer_type), ]
+  
+  # Subset the prism.exp data frame based on the row names from the cancer_df
+  prism_exp_subset <- prism.exp[rownames(cancer_df), ]
+  
+  # Store the subsetted prism.exp in the list with the cancer type as the list name
+  prism_exp_list[[cancer_type]] <- prism_exp_subset
+}
+
+# Access the data frames for specific cancer types from the list
+prism_exp_list[["lung cancer"]]
+# Access other cancer types similarly
+```
+
 ## Results
 
 Darstellung der Ergebnisse und Abbildungen
-
-+------------------------------------------------------------+----------------+
-| Must-haves                                                 |                |
-+============================================================+================+
-| descriptive statistics including graphical representations | mean           |
-|                                                            |                |
-|                                                            | median         |
-|                                                            |                |
-|                                                            | **quantiles**  |
-|                                                            |                |
-|                                                            | **Histograms** |
-|                                                            |                |
-|                                                            | range          |
-+------------------------------------------------------------+----------------+
-| dimension reduction analysis                               | PCA            |
-+------------------------------------------------------------+----------------+
-| statistical tests                                          |                |
-+------------------------------------------------------------+----------------+
-| linear regression                                          |                |
-+------------------------------------------------------------+----------------+
 
 ### descriptive statistics
 
@@ -169,9 +162,6 @@ For a quick overview of the content we printed the headlines of the data sets fo
 ```{r head_prism.cl, echo=FALSE}
 head(prism.cl)
 ```
-
-We looked for the data distribution for prism.exp, prism.achilles,prism.cnv and prism which seemed to be not normal distributed.
-This conclusion was confirmed by a Anderson-Darling normality test (p-value \< 2.2e-16).
 
 ```{r distribution_histograms, echo=FALSE}
 par(mfrow=c(2,2))
@@ -183,6 +173,11 @@ hist(unlist(prism.achilles), breaks = 60,main = "Histogram of prism.achilles", x
 
 hist(unlist(prism.cnv), main= "Histogram of prism.cnv", xlab="copy number variation", breaks=60)
 ```
+
+The data distribution of prism.exp, prism.achilles, prism.cnv and prism is not normaly distributed [Anderson-Darling normality test (p-value \< 2.2e-16)].
+The Anderson-Darling test allows conclusions about wheater a given data sample follows a particular distribution or not.
+Here we checked against normal distribution.
+In contrast to the Kolmogorov-Smirnov test, more attention is paid to the tails and it is possible to consider larger data sets.
 
 ```{r check_normal_distribution, include=FALSE}
 #values as vectors
@@ -206,9 +201,6 @@ hyp_test_prism.cnv_vector<-ad.test(prism.cnv_vector)
 hyp_test_prism.cnv_vector
 ```
 
-The boxplot of the data shows small inter quartile ranges for prism.cnv and prism.achilles and a bigger range for the prism data set.
-This means we have more spreaded values for prism than for the other two data sets.
-
 ```{r boxplot_prism_cnv_ach, echo=FALSE}
 boxplot(
   prism_vector,prism.cnv_vector, prism.achilles_vector,
@@ -216,9 +208,17 @@ boxplot(
   names=c("prism", "prism.cnv", "prism.achilles"))
 ```
 
-### Do some high effective drugs target essential genes of kidney cancer?
+The boxplot of the data shows small inter quartile ranges for prism.cnv and prism.achilles and a bigger range for the prism data set.
+This means we have more spreaded values for prism than for the other two data sets.
 
-#### Which genes are essential for kidney cancer cell lines?
+#### Correlation
+
+##### between knock-out scores and expression
+
+In order to search for high effective drugs, targeting essential genes of kidney cancer different steps are needed to be done.
+
+First, calculating the correlation between the achilles knock-out scores and the expression values for each gene, results in correlation values which indicate how essential the genes are.
+To calculate the correlation correctly, it is necessary to have the same size and order of data in both data sets.
 
 ```{r essential_genes, include=FALSE}
 #old~new
@@ -271,10 +271,14 @@ high_corr_genenames<-c(colnames_neg_corr, colnames_pos_corr)
 
 ```{r correlation_histogram, echo=FALSE}
 hist(correlation_ach_exp_kidney, breaks = 40)
-abline(v=c(-0.9,0.9))
+qu<-quantile(correlation_ach_exp_kidney, 0.02, na.rm = TRUE)
+abline(v=c(-qu,qu))
 ```
 
-#### Which drugs do have a high negative effect on the cell lines?
+###### **Which drugs do have a high negative effect on the cell lines?**
+
+In order to slow down or even prevent the growth of tumor cells, we are looking for drugs of which a negative value was obtained in the prism screening.
+Since the effect should be as strongly negative as possible, it was decided, after considering the distribution of prism values, to classify drugs below a threshold of the 2% quartile of prism values as highly effective drugs.
 
 ```{r neg_effect_drugs, include=FALSE}
 #Set threshold depending on the distribution of prism 
@@ -299,7 +303,6 @@ prism.treat.kidney.high_effect_drugs<-print(prism.treat[rownames(prism.treat) %i
 
 prism.treat.kidney.high_effect_drugs$target <- as.character(prism.treat.kidney.high_effect_drugs$target)
 
-##Create a vector with all targets of the high_effect drugs
 
 # Extract all targets as a single character vector
 targetgenes_high_effect_drugs_kidney <- 
@@ -313,7 +316,9 @@ targetgenes_high_effect_drugs_kidney <- targetgenes_high_effect_drugs_kidney[!is
 #print(targetgenes_high_effect_drugs_kidney)
 ```
 
-```{r venn_genes, echo=FALSE}
+After identifying both essential genes and the target genes of the highly effective drugs, we then searched for overlaps between these two groups.
+
+```{r venn_genes, include=FALSE}
 # Create a list of the gene names in each vector
 set1 <- unique(high_corr_genenames)
 set2 <- unique(targetgenes_high_effect_drugs_kidney)
@@ -334,63 +339,73 @@ venn1<-venn.diagram(
   filename = NULL
 )
 grid.newpage()
+
+```
+
+```{r venn_diagramm, echo=FALSE}
 grid.draw(venn1)
 ```
 
-These genes are essential genes as well as targets of high inhibiting drugs:
+This resulted in 21 target genes being identified.
 
 ```{r intersect_genes, echo=FALSE}
 #find the genes in the intersection
 intr_targets <- intersect(set1, set2)
+intr_targets
 ```
 
-#### What about mutations of those target genes?
+###### Details of those target genes
 
-```{r prism.snv_subset_targets, include=FALSE}
-prism.snv_intr_targets<-print(prism.snv[prism.snv$Hugo_Symbol %in% intr_targets,])
+To learn more details about the target genes, both the number and type of occurring mutations or variants of these genes, as well as their correlation values were examined in more detail.
+
+```{r subsets_targets, include=FALSE}
+prism.snv_intr_targets<-prism.snv[prism.snv$Hugo_Symbol %in% intr_targets,]
+
+corr_ach_exp_kidney_intr_targets<-final_correlation_ach_exp_kidney[,colnames(final_correlation_ach_exp_kidney) %in% intr_targets]
+corr_ach_exp_kidney_intr_targets<-as.data.frame(corr_ach_exp_kidney_intr_targets)
+
+df_corr_ach_exp_kidney_intr_targets <- data.frame(Genes = rownames(corr_ach_exp_kidney_intr_targets), Values = as.numeric(corr_ach_exp_kidney_intr_targets[,1]))
 ```
 
-```{r}
+```{r plot_details_target_genes, echo=FALSE}
+
 #count_mutations<-as.vector(prism.snv_intr_targets$Hugo_Symbol)
 #count_mutations<-table(vector_count_mutations)
 
 #df.count_mutations<-as.data.frame(count_mutations)
 
 library(ggplot2)
- 
-##backup-plot 
-#ggplot(df.count_mutations, aes(x = vector_count_mutations, y = Freq)) +
- # geom_bar(stat = "identity") +
-  #xlab("Gene") +
-  #ylab("Number of Mutations") +
-  #ggtitle("Number of Mutations per Gene")+
-  #theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
 library(RColorBrewer)
 
-# Create a custom color palette based on unique variant classifications
-unique_variants <- unique(prism.snv_intr_targets$Variant_Classification)
 
-#color_palette <- terrain.colors(length(unique_variants))
+####mutation plot
 color_palette <- brewer.pal(9, "GnBu")
-#RdYlBu
 
-
-# Plot the histogram  (bars filled with different colors)
-ggplot(prism.snv_intr_targets, aes(x = Hugo_Symbol, fill = Variant_Classification)) +
+mutation_plot<-ggplot(prism.snv_intr_targets, aes(x = Hugo_Symbol, fill = Variant_Classification)) +
   geom_bar() +
   scale_fill_manual(values = color_palette) +
   labs(x = "gene", y = "Count", title = "Variant classifications of possible target genes") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 55, hjust = 1))
+
+####correlation plot
+color_palette_1 <- colorRampPalette(colors = c("steelblue", "steelblue4"))(21)
+
+correlation_plot<-ggplot(df_corr_ach_exp_kidney_intr_targets, aes(x = Genes, y = Values)) +
+  geom_bar(stat = "identity", fill=color_palette_1) +
+  xlab("target genes") +
+  ylab("correlation values") +
+  ggtitle("correlation values of target genes")+
+  theme(axis.text.x = element_text(angle = 55, hjust = 1))
+
 ```
 
-###Is there a correlation between copy number variation and expression?
+##### between copy number variation and expression
 
-In order to perform a correlation analysis the questionned dataframes need to have the same dimension and the same order of genes and celllines.
+In order to perform a correlation analysis the questioned data frames need to have the same dimension and the same order of genes and celllines.
+
+```{r order_cnv&exp_corr, include=FALSE}
 ### Reordering of cnv and exp for correlation analysis
-
-```{r}
 #identify missing rows in exp that are present in cnv
 diff_rows <- setdiff(rownames(prism.cnv), rownames(prism.exp))
 diff_rows <- unique(c(diff_rows, setdiff(rownames(prism.exp), rownames(prism.cnv))))
@@ -417,9 +432,7 @@ prism.exp_corr_cleaned<- prism.exp_corr_cleaned[order(rownames(prism.exp_corr_cl
 prism.cnv_corr_cleaned= prism.cnv_corr_cleaned[,colnames(prism.exp_corr_cleaned)]
 ```
 
-###correlation values
-
-```{r}
+```{r corr_exp_cnv, include=FALSE}
 #correlation values
 cor_g<-matrix()
 for (g in colnames(prism.exp_corr_cleaned)) {  
@@ -448,6 +461,13 @@ h_kidney_cor=hist(kidney_cor)
 sum(h_kidney_cor$counts[(which(h_kidney_cor$breaks <= 0))])/sum(h_kidney_cor$counts)
 ```
 
+```{r hist_corr_exp_cnv, echo=FALSE}
+par(mfrow = c(1,2))
+#distribution of correlation values
+hist(final_cor)
+hist(kidney_cor)
+```
+
 While 16% of the overall correlation values lie below 0 with values ranging from x to x, kidney cell lines had showed lower correlation value (34.7% \<0, range: x to x) As the histogramm of the correlation values of kidney cell lines seems normally distributed, normality tests were performed.
 As the sample size exceeds 5000 it was not possible to perform a Shapiro-Wilks test, so for a first analysis a qqplot was plotted (kidney correlation values against a random normaldistibution with n= sample size of correlation values and mean= mean of correlation values).
 The line showing normal distribution did not align with the plotted values.
@@ -461,19 +481,22 @@ With a significance level of 5% the 0-hypothesis "F0 follows Fn" must be rejecte
 
 Stammt Fn aus F0?
 (Einstichprobentest, Anpassungstest) vergleicht maximalen abstand der beiden funktionen, je kleiner dieser abstand desto wahrscheinlicher, dass die stichprobe aus der verteilung stammt.
-D= max Abstand <https://www.bing.com/videos/search?q=kolmogorov-smirnov+test&&view=detail&mid=DFFE9293A619B4D51667DFFE9293A619B4D51667&&FORM=VRDGAR&ru=%2Fvideos%2Fsearch%3Fq%3Dkolmogorov-smirnov%2Btest%26FORM%3DHDRSC4> <https://de.wikipedia.org/wiki/Kolmogorow-Smirnow-Test> ##test for normality of kidney_cor
+D= max Abstand <https://www.bing.com/videos/search?q=kolmogorov-smirnov+test&&view=detail&mid=DFFE9293A619B4D51667DFFE9293A619B4D51667&&FORM=VRDGAR&ru=%2Fvideos%2Fsearch%3Fq%3Dkolmogorov-smirnov%2Btest%26FORM%3DHDRSC4> <https://de.wikipedia.org/wiki/Kolmogorow-Smirnow-Test>
 
-```{r}
+```{r norm_test_kidney_corr, echo=FALSE}
 dim(kidney_cor)
-plot.new()
 qqplot(rnorm(18560,mean=mean(kidney_cor, na.rm = TRUE)),kidney_cor) 
 qqline(rnorm(18560,mean=mean(kidney_cor, na.rm = TRUE)))
 ks.test(kidney_cor, "pnorm", mean=mean(kidney_cor, na.rm = TRUE))
 ```
 
-### Identification of clusters in highly effective drugs (2% quantile)
+### dimension reduction
 
-```{r}
+#### clustering
+
+##### of highly effective drugs (2% quantile)
+
+```{r prism.treat_subset_high_eff_drugs, eval=FALSE, include=FALSE}
 #Set threshold depending on the distribution of prism 
 #prism_threshold<- quantile(prism_NA_0, 0.02, na.rm=TRUE)
 
@@ -492,8 +515,9 @@ for (col in colnames(prism_NA_0)) {
 prism.treat.high_effect_drugs<-print(prism.treat[rownames(prism.treat) %in% high_effect_drugs,])
 
 prism_clustering<- prism_NA_0[, rownames(prism.treat.high_effect_drugs)]
+```
 
-
+```{r eval=FALSE, include=FALSE}
 #run k-means for k=1 to k=15 clusters, and for each k check the WSS value
 #calculate within-square-distance
 wss_prism = sapply(1:15,function(k) { 
@@ -502,6 +526,10 @@ wss_prism = sapply(1:15,function(k) {
 plot(1:15,wss_prism,type='b',pch=19,xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
 
+
+```
+
+```{r eval=FALSE, include=FALSE}
 #clustern sie nach moa?
 #identification of cluster content
 #assigns each broad-ID to one of 3 clusters
@@ -572,9 +600,10 @@ hist(as.numeric(table(prism.treat.high_effect_drugs$target)[which(as.numeric(tab
 hist(prism.treat.high_effect_drugs$dose)
 ```
 
-### Identification of clusters in highly effective drugs in kidney cell lines(2% quantile)
+##### of highly effective drugs in kidney cell lines(2% quantile)
 
-```{r}
+```{r cluster_kidney_cl, echo=FALSE}
+par(mfrow = c(1,2))
 #run k-means for k=1 to k=15 clusters, and for each k check the WSS value
 #identify data frame with only high effective drugs in kidney cancer
 prism_kidney_clustering<- prism_NA_0[, rownames(prism.treat.kidney.high_effect_drugs)]
@@ -605,6 +634,9 @@ prism.kidney.cluster2<-prism.treat[names(prism_kidney_cluster_list[[2]]),]
 #prism.kidney.cluster2$moa
 
 dotchart(as.numeric(table(prism.kidney.cluster1$moa)))
+```
+
+```{r tables}
 table(prism.kidney.cluster1$moa)[which(as.numeric(table(prism.kidney.cluster1$moa))>5)]
 table(prism.kidney.cluster2$moa)[which(as.numeric(table(prism.kidney.cluster2$moa))>5)]
 
@@ -612,11 +644,11 @@ table(prism.kidney.cluster2$moa)[which(as.numeric(table(prism.kidney.cluster2$mo
 table(prism.treat.kidney.high_effect_drugs$target)[which(as.numeric(table(prism.treat.kidney.high_effect_drugs$target))>=5)]
 ```
 
-### Principal component analysis
+#### Principal component analysis
 
-#PCA for gene expression
+##### for gene expression
 
-```{r}
+```{r PCA_gene_expr, echo=FALSE}
 pca_exp_celllines=prcomp(prism.exp, center=FALSE, scale=FALSE)
 celllines.exp=prism.cl[rownames(prism.cl) %in% rownames(prism.exp),]
 # Make another df
@@ -632,9 +664,10 @@ ggplot(plot_wCells.exp,
 ```
 
 Soft-tissue-celllines and central-nervous-system-celllines seem to cluster together while prostate and kidney cancer are widely spread over the plot.
-#PCA for copy number variation
 
-```{r}
+##### for copy number variation
+
+```{r PCA_cnv, echo=FALSE}
 pca_cnv_celllines=prcomp(prism.cnv, center=FALSE, scale=FALSE)
 celllines.cnv=prism.cl[rownames(prism.cl) %in% rownames(prism.cnv),]
 # Make another df
@@ -649,9 +682,9 @@ ggplot(plot_wCells.cnv,
   geom_point()
 ```
 
-#PCA for knockout scores
+##### for knockout scores
 
-```{r}
+```{r PCA_achilles, echo=FALSE}
 achilles_NA_0 <- prism.achilles
 achilles_NA_0[is.na(achilles_NA_0)] <- 0 # ersetze alle NA durch 0
 pca_achilles_celllines=prcomp(achilles_NA_0, center=FALSE, scale=FALSE)
@@ -668,9 +701,9 @@ ggplot(plot_wCells.achilles,
   geom_point()
 ```
 
-####Is there a correlation between gene expression and copy number variation?
+### gibts das 2x ??? - Is there a correlation between gene expression and copy number variation?
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 cor_g<-matrix()
 for (g in colnames(prism.exp_corr_cleaned)) {  
   valse_g = prism.exp_corr_cleaned[,colnames(prism.exp_corr_cleaned) == g]  
@@ -694,20 +727,22 @@ kidney_cor = t(data.frame(cor_kidney))
 hist(kidney_cor)
 ```
 
-WHile the general correlation values are widely spread between -0.4 and 0.8 with most values lying on the positive side (84%), the correlation values for kidney cancer seem to normally distributed around 0.025 but with more values having a negative correlation value (34.6%)-\> Statistical test
+While the general correlation values are widely spread between -0.4 and 0.8 with most values lying on the positive side (84%), the correlation values for kidney cancer seem to normally distributed around 0.025 but with more values having a negative correlation value (34.6%)-\> Statistical test
 
 As the sample size is too large for a Shapiro Wilks test, a qqplot plotting a normal distribution with mean=mean(kidney correlation values) against kidney correlation values was performed.
 It shows a clear line.
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 qqplot(rnorm(18560,mean=mean(kidney_cor, na.rm = TRUE)),kidney_cor)
 ks.test(kidney_cor, "pnorm", mean=mean(kidney_cor, na.rm = TRUE))
 ```
 
-As p-value \< 2.2e-16, the 0-hypothesis must be rejected, so the data is not normally distributed.
+As p-value \< 2.2e-16, the H~0~-hypothesis must be rejected, so the data is not normally distributed.
+
+### linear regression
 
 ## Discussion
 
 kurze Zusammenfassung der Ergebnisse, Diskussion über gewonnen Erkenntnisse, Einschränkungen in der Analyse
 
-## Referenzen
+## References
