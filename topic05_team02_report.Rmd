@@ -527,7 +527,7 @@ dotchart(as.numeric(table(prism.cluster1$moa)))
 
 table(prism.treat.high_effect_drugs$disease.area)
 prism.cluster1.moa<-which(as.numeric(table(prism.cluster1$moa))>10)
-prism.cluster.1.moa<-table(prism.cluster1$moa)[cccc1]
+prism.cluster.1.moa<-table(prism.cluster1$moa)[prism.cluster1$moa]
 prism.cluster.2.moa<-table(prism.cluster2$moa)[which(as.numeric(table(prism.cluster2$moa))>10)]
 prism.cluster.3.moa<-table(prism.cluster3$moa)[which(as.numeric(table(prism.cluster3$moa))>10)]
 ##which(table(prism.treat.high_effect_drugs$disease.area)!=0)
@@ -537,17 +537,37 @@ dotchart(as.numeric(table(prism.treat.high_effect_drugs$moa)))
 prism.moa<-table(prism.treat.high_effect_drugs$moa)[which(as.numeric(table(prism.treat.high_effect_drugs$moa))>10)]
 diseaseareasxxx<-table(prism.treat.high_effect_drugs$disease.area)[which(as.numeric(table(prism.treat.high_effect_drugs$disease.area))>10)]
 
+prism_cluster_all$moa[which(table(prism.treat.high_effect_drugs$moa)>5)]
+##alle zeilen die einen der vektorinhalte als inhalt haben sollen beibehalten werden
+
+prism_cluster_all<-prism.treat.high_effect_drugs
+prism_cluster_all$cluster<-NA
+prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluster1)]<-1
+prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluster2)] <-2
+prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluster3)]<-3
+prism_cluster_all_test=
+
+
+#anteil der mode of actions in den einzelnen cluster
+# Number of unique categories
+num_categories <- length(unique(prism_cluster_all_test$moa))
+# Create a color palette using rainbow colors
+library(RColorBrewer)
+color_palette <- pal.bands(polychrome)
+
+library(ggplot2)
+ggplot(prism_cluster_all_test, aes(x = cluster, fill = moa)) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  labs(x = "Cluster", y = "Mode of actions", title = "Mode of actions in highly effectivte drug clusters") +
+  theme_minimal()
+
+
 #targets:
 dotchart(as.numeric(table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target))>5)]))
 table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target))>10)]
 hist(as.numeric(table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target)))]))
 
-ggplot(prism.treat.high_effect_drugs$target, aes(x = Hugo_Symbol, fill = Variant_Classification)) +
-  geom_bar() +
-  scale_fill_manual(values = color_palette) +
-  labs(x = "gene", y = "Number of mutations", title = "Variant classifications of possible target genes") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 55, hjust = 1))
 #dose
 hist(prism.treat.high_effect_drugs$dose)
 ```
