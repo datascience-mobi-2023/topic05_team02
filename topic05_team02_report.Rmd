@@ -150,6 +150,10 @@ for (cancer_type in cancertypes) {
 prism_exp_list[["lung cancer"]]
 # Access other cancer types similarly
 ```
+### STatistical tests
+##Kolmogorov-Smirnov-test
+The Kolgomogorov-SMirnov-test can be a one-sample or a two-sample test. In this report only the one-sample test was used. The null-hypothesis of this test is: "The random variable X follows the probability distribution F0."
+The empiric distribution Fn is then compared to the given distribution F0. The comparitive characteristic is the maximal distance between the two distributions. The larger the distance the less likely it is for F0 to follow Fn.
 
 ## Results
 
@@ -401,8 +405,9 @@ correlation_plot<-ggplot(df_corr_ach_exp_kidney_intr_targets, aes(x = Genes, y =
 ```
 
 ##### between copy number variation and expression
+As genes lead to the production of effector molecules (mRNA, proteins, etc.) it is interesting to see if a gene product associated with a disease (as disease inhibiting or disease promoting factor) can be amplified by a higher or reduced by a lower (0 or 1) number of gene copies in the genome.
 
-In order to perform a correlation analysis the questioned data frames need to have the same dimension and the same order of genes and celllines.
+In order to perform the correlation analysis the questioned data frames need to have the same dimension and the same order of genes and celllines.
 
 ```{r order_cnv&exp_corr, include=FALSE}
 ### Reordering of cnv and exp for correlation analysis
@@ -431,6 +436,10 @@ prism.exp_corr_cleaned<- prism.exp_corr_cleaned[order(rownames(prism.exp_corr_cl
 #reorder columns by names
 prism.cnv_corr_cleaned= prism.cnv_corr_cleaned[,colnames(prism.exp_corr_cleaned)]
 ```
+The correlation was computed for each gene once using only the kidney cell line samples and once for the whole data set. The whole-cell-line correlations show a lower dispersion (values rangig from -0.24 to +0.78) than the correlations computed with only kidney cell lines (range: -0.78 to +0.96) which can be explained by the amount of data.
+While 16% of the overall correlation values lie below 0, kidney cell lines had showed lower correlation value (34.7% <0) 
+Overall, for some genes copy number variation seems to be highly correlated for some genes (high copy number variation-> high gene expression), while for others there's even a negative correlation observable (high cnv-> low exp).
+As the histogram of the correlation values of kidney cell lines seems normally distributed, normality tests were performed.
 
 ```{r corr_exp_cnv, include=FALSE}
 #correlation values
@@ -468,20 +477,11 @@ hist(final_cor)
 hist(kidney_cor)
 ```
 
-While 16% of the overall correlation values lie below 0 with values ranging from x to x, kidney cell lines had showed lower correlation value (34.7% \<0, range: x to x) As the histogramm of the correlation values of kidney cell lines seems normally distributed, normality tests were performed.
-As the sample size exceeds 5000 it was not possible to perform a Shapiro-Wilks test, so for a first analysis a qqplot was plotted (kidney correlation values against a random normaldistibution with n= sample size of correlation values and mean= mean of correlation values).
+As the sample size exceeds 5000 it was not possible to perform a Shapiro-Wilks test, so for a first analysis a qqplot was plotted (kidney correlation values against a random normal distibution with n= sample size of correlation values and mean= mean of correlation values).
 The line showing normal distribution did not align with the plotted values.
-To confirm this result, a Kolmogorov-Smirnov test was performed.
-The null-hypothesis of this test is: The random variable X follows the probability distribution F0.
-The empiric distribution Fn (kidney_cor) is then compared to the given distribution F0 (rnorm).
-the comparitive characteristic is the maximal distance between the two distributions.
-The larger the distance the less likely it is for F0 to follow Fn.
-The maximal distance between kidney_cor and pnorm is 0.28 and the p-value below 2.2e-16.
-With a significance level of 5% the 0-hypothesis "F0 follows Fn" must be rejected.
+To confirm this result, a Kolmogorov-Smirnov test was performed. In this case F0=rnorm and Fn=kidney_cor (distribution of kidney cell lines correlation values between cnv and exp). The p-value below 2.2e-16 so with a significance level of 5% the 0-hypothesis "F0 follows Fn" must be rejected. Kidney correlation values are not normally distributed.
 
-Stammt Fn aus F0?
-(Einstichprobentest, Anpassungstest) vergleicht maximalen abstand der beiden funktionen, je kleiner dieser abstand desto wahrscheinlicher, dass die stichprobe aus der verteilung stammt.
-D= max Abstand <https://www.bing.com/videos/search?q=kolmogorov-smirnov+test&&view=detail&mid=DFFE9293A619B4D51667DFFE9293A619B4D51667&&FORM=VRDGAR&ru=%2Fvideos%2Fsearch%3Fq%3Dkolmogorov-smirnov%2Btest%26FORM%3DHDRSC4> <https://de.wikipedia.org/wiki/Kolmogorow-Smirnow-Test>
+<https://www.bing.com/videos/search?q=kolmogorov-smirnov+test&&view=detail&mid=DFFE9293A619B4D51667DFFE9293A619B4D51667&&FORM=VRDGAR&ru=%2Fvideos%2Fsearch%3Fq%3Dkolmogorov-smirnov%2Btest%26FORM%3DHDRSC4> <https://de.wikipedia.org/wiki/Kolmogorow-Smirnow-Test>
 
 ```{r norm_test_kidney_corr, echo=FALSE}
 dim(kidney_cor)
@@ -495,7 +495,8 @@ ks.test(kidney_cor, "pnorm", mean=mean(kidney_cor, na.rm = TRUE))
 #### clustering
 
 ##### of highly effective drugs (2% quantile)
-
+In order to find out if a specific drug mode of action and/or target and therefore pathways are overrepresented in cancer which would give a guiding principle for further drug research, k-means clustering was performed on the highly effective drugs. The analysis was carried out for cancer in general (high effective drugs on all-cell-line data frame) and for kidney cancer (high effective drugs in kidney cell lines).
+First, a data frame containing only the upper 2% quantile of effective drugs was extracted from the prism data frame.
 ```{r prism.treat_subset_high_eff_drugs, eval=FALSE, include=FALSE}
 #Set threshold depending on the distribution of prism 
 #prism_threshold<- quantile(prism_NA_0, 0.02, na.rm=TRUE)
@@ -516,7 +517,7 @@ prism.treat.high_effect_drugs<-print(prism.treat[rownames(prism.treat) %in% high
 
 prism_clustering<- prism_NA_0[, rownames(prism.treat.high_effect_drugs)]
 ```
-
+K-means was performed for k=1:15 and the within-cluster-sum of squared errors (WSS) plotted. This allowed the identification of 3 clusters.
 ```{r eval=FALSE, include=FALSE}
 #run k-means for k=1 to k=15 clusters, and for each k check the WSS value
 #calculate within-square-distance
@@ -525,14 +526,10 @@ wss_prism = sapply(1:15,function(k) {
 })
 plot(1:15,wss_prism,type='b',pch=19,xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
-
-
 ```
-
+To further analyse the cluster contents, a data frame for each cluster was created and several characteristics (mode of action, targets,disease area, ...) compared.
 ```{r eval=FALSE, include=FALSE}
-#clustern sie nach moa?
 #identification of cluster content
-#assigns each broad-ID to one of 3 clusters
 km_prism_cluster = kmeans(t(prism_clustering), 
             centers = 3, 
             nstart = 10)
@@ -546,28 +543,34 @@ for(i in 1:3){
 prism.cluster1<-prism.treat[names(prism_cluster_list[[1]]),]
 prism.cluster2<-prism.treat[names(prism_cluster_list[[2]]),]
 prism.cluster3<-prism.treat[names(prism_cluster_list[[3]]),]
-#extracts mode of action for drugs in each cluster
-prism.cluster1$target
-prism.cluster2$disease.area
-table(prism.cluster2$disease.area)
+#mode of action
 prism.cluster3$moa[which(table(prism.cluster3$moa)!=0)]
 dotchart(as.numeric(table(prism.cluster1$moa)))
-
-table(prism.treat.high_effect_drugs$disease.area)
 prism.cluster1.moa<-which(as.numeric(table(prism.cluster1$moa))>10)
 prism.cluster.1.moa<-table(prism.cluster1$moa)[prism.cluster1$moa]
 prism.cluster.2.moa<-table(prism.cluster2$moa)[which(as.numeric(table(prism.cluster2$moa))>10)]
 prism.cluster.3.moa<-table(prism.cluster3$moa)[which(as.numeric(table(prism.cluster3$moa))>10)]
-##which(table(prism.treat.high_effect_drugs$disease.area)!=0)
-#->different moa highly represented in the different clusters
-
 dotchart(as.numeric(table(prism.treat.high_effect_drugs$moa)))
 prism.moa<-table(prism.treat.high_effect_drugs$moa)[which(as.numeric(table(prism.treat.high_effect_drugs$moa))>10)]
-diseaseareasxxx<-table(prism.treat.high_effect_drugs$disease.area)[which(as.numeric(table(prism.treat.high_effect_drugs$disease.area))>10)]
-
 prism_cluster_all$moa[which(table(prism.treat.high_effect_drugs$moa)>5)]
-##alle zeilen die einen der vektorinhalte als inhalt haben sollen beibehalten werden
+#disease area
+prism.cluster2$disease.area
+table(prism.cluster2$disease.area)
+table(prism.treat.high_effect_drugs$disease.area)
+diseaseareasxxx<-table(prism.treat.high_effect_drugs$disease.area)[which(as.numeric(table(prism.treat.high_effect_drugs$disease.area))>10)]
+#target
+prism.cluster1$target
+dotchart(as.numeric(table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target))>5)]))
+table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target))>10)]
+hist(as.numeric(table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target)))]))
+##which(table(prism.treat.high_effect_drugs$disease.area)!=0)
 
+#dose
+hist(prism.treat.high_effect_drugs$dose)
+
+
+
+#anteil der mode of actions in den einzelnen cluster
 prism_cluster_all<-prism.treat.high_effect_drugs
 prism_cluster_all$cluster<-NA
 prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluster1)]<-1
@@ -575,8 +578,6 @@ prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluste
 prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluster3)]<-3
 prism_cluster_all_test=
 
-
-#anteil der mode of actions in den einzelnen cluster
 # Number of unique categories
 num_categories <- length(unique(prism_cluster_all_test$moa))
 # Create a color palette using rainbow colors
@@ -589,15 +590,6 @@ ggplot(prism_cluster_all_test, aes(x = cluster, fill = moa)) +
   scale_fill_manual(values = color_palette) +
   labs(x = "Cluster", y = "Mode of actions", title = "Mode of actions in highly effectivte drug clusters") +
   theme_minimal()
-
-
-#targets:
-dotchart(as.numeric(table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target))>5)]))
-table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target))>10)]
-hist(as.numeric(table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target)))]))
-
-#dose
-hist(prism.treat.high_effect_drugs$dose)
 ```
 
 ##### of highly effective drugs in kidney cell lines(2% quantile)
@@ -647,7 +639,7 @@ table(prism.treat.kidney.high_effect_drugs$target)[which(as.numeric(table(prism.
 #### Principal component analysis
 
 ##### for gene expression
-
+Principal component analysis was performed in order to find out if there are similarities within cell lines 
 ```{r PCA_gene_expr, echo=FALSE}
 pca_exp_celllines=prcomp(prism.exp, center=FALSE, scale=FALSE)
 celllines.exp=prism.cl[rownames(prism.cl) %in% rownames(prism.exp),]
