@@ -20,6 +20,8 @@ bibliography: topic05_team02_references.bib
 
 ## Introduction
 
+Cancer is one of the leading death causes worldwide with a new case incidence of 442.4 per 100,000 people and 10 million deaths per year.
+
 !!!!!!!!!!!!!!!!!!!! Beschreibung der Fragestellung, Vorstellung der publizierten Vorarbeiten,\...
 
 The repurposing of non-oncology drugs, is one way to find potential treatments for cancer in the future.
@@ -41,7 +43,7 @@ The data we used for the project was published by @Corsello_2020 and @Dempster_2
 #### What data do we have and what does it tell us?
 
 | data set         | explanation                                                                                                                        |
-|---------------------|---------------------------------------------------|
+|------------------|------------------------------------------------------------------------------------------------------------------------------------|
 | `prism.exp`      | Transcripts per million of the genes (columns) for the cell lines (rows)                                                           |
 | `prism.treat`    | information about each drug (rows) and dosis                                                                                       |
 | `prism`          | treatment effects (columns) on the cell growth for each cell line (rows)                                                           |
@@ -539,8 +541,6 @@ In this case F~0~=`rnorm` and F~n~=`kidney_cor` (distribution of kidney cell lin
 The p-value below 2.2e-16 so with a significance level of 5% the F~0~-hypothesis "F~0~ follows F~n~" must be rejected.
 Kidney correlation values are not normally distributed.
 
-<https://www.bing.com/videos/search?q=kolmogorov-smirnov+test&&view=detail&mid=DFFE9293A619B4D51667DFFE9293A619B4D51667&&FORM=VRDGAR&ru=%2Fvideos%2Fsearch%3Fq%3Dkolmogorov-smirnov%2Btest%26FORM%3DHDRSC4> <https://de.wikipedia.org/wiki/Kolmogorow-Smirnow-Test>
-
 ```{r norm_test_kidney_corr, echo=FALSE}
 dim(kidney_cor)
 qqplot(rnorm(18560,mean=mean(kidney_cor, na.rm = TRUE)),kidney_cor) 
@@ -556,7 +556,7 @@ ks.test(kidney_cor, "pnorm", mean=mean(kidney_cor, na.rm = TRUE))
 
 In order to find out if a specific drug mode of action and/or target and therefore pathways are overrepresented in cancer which would give a guiding principle for further drug research, k-means clustering was performed on the highly effective drugs.
 The analysis was carried out for cancer in general (high effective drugs on all-cell-line data frame) and for kidney cancer (high effective drugs in kidney cell lines).
-First, a data frame containing only the upper 2% quantile of effective drugs was extracted from the `prism` data frame.
+First, a data frame containing only the upper 2% quantile of effective drugs was extracted from the prism data frame to reduce it to a limited number of most effective drugs.
 
 ```{r prism.treat_subset_high_eff_drugs, eval=FALSE, include=FALSE}
 #Set threshold depending on the distribution of prism 
@@ -580,7 +580,7 @@ prism_clustering<- prism_NA_0[, rownames(prism.treat.high_effect_drugs)]
 ```
 
 K-means was performed for k=1:15 and the within-cluster-sum of squared errors (WSS) plotted.
-This allowed the identification of 3 clusters.
+This allowed the identification of 3 clusters with sizes n(drugs)= 672; 470; 226.
 
 ```{r eval=FALSE, include=FALSE}
 #run k-means for k=1 to k=15 clusters, and for each k check the WSS value
@@ -592,9 +592,18 @@ plot(1:15,wss_prism,type='b',pch=19,xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
 ```
 
-To further analyse the cluster contents, a data frame for each cluster was created and several characteristics (mode of action, targets, disease area, ...) compared.
+To further analyse the cluster contents, a data frame for each cluster was created and several characteristics (mode of action, targets,disease area, ...) compared.
+Some targets were a lot more represented than others (see section "targets of highly effective drugs") but not important for the clustering.
+The often represented disease areas were the same in all clusters and are visualized in the table below.
+Interestingly, drugs known to be efficient in infectious diseases are highly represented, as well as oncologic, cardiologic anf hematologic malignancy drugs.
+The occurrence of mode of actions can be seen in the dotchart below.
+A clustering by mode of action is possible but not clear enough.
+Some modes of action are only highly represented in one cluster (eg aurora kinase inhibitor in cluster 1, HSP inhibitor in cluster 2, tubulin polymerization inhibitor in 1&2 but very little in 3 etc.) whereas other modes of action are equally spread beyond the clusters (HDAC inhibitor, ATPase inhibitor,...).
+Especially cluster 1 and 2 seem very similar in the distribution of modes of action.
+The question on which similarity characteristic the clustering happens.
+At last, the drug dose was further investigated but again, the distribution was very similar in all three clusters with peaks at (0-0.249),(0.625-0.749), (2,5-2,624), (10-10,124).
 
-```{r eval=FALSE, include=FALSE}
+```{r echo=FALSE}
 #identification of cluster content
 km_prism_cluster = kmeans(t(prism_clustering), 
             centers = 3, 
@@ -617,7 +626,6 @@ prism.cluster.2.moa<-table(prism.cluster2$moa)[which(as.numeric(table(prism.clus
 #Cluster3
 prism.cluster.3.moa<-table(prism.cluster3$moa)[which(as.numeric(table(prism.cluster3$moa))>=5)]
 #all high effective drugs
-plot.new()
 dotchart(as.numeric(table(prism.treat.high_effect_drugs$moa)), xlab= "Frequency", ylab="Modes of action", main= "Frequency of each mode of action")
 abline(v=10, col="orange")
 prism.moa<-table(prism.treat.high_effect_drugs$moa)[which(as.numeric(table(prism.treat.high_effect_drugs$moa))>=10)]
@@ -625,12 +633,8 @@ prism.moa<-table(prism.treat.high_effect_drugs$moa)[which(as.numeric(table(prism
 ##disease area
 table(prism.treat.high_effect_drugs$disease.area)[which(as.numeric(table(prism.treat.high_effect_drugs$disease.area))>5)]
 
-#target
-hist(as.numeric(table(prism.treat.high_effect_drugs$target)))
-table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target))>5)]
-
 #dose
-hist(prism.treat.high_effect_drugs$dose)
+hist(prism.treat.high_effect_drugs$dose, breaks=seq(0,12, by=0.25), main= "Frequency of drug dose in highly efficient drug/dose combinations", xlab= "dose")
 
 #anteil der mode of actions in den einzelnen cluster
 prism_cluster_all<-prism.treat.high_effect_drugs
@@ -639,20 +643,26 @@ prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluste
 prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluster2)] <-2
 prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluster3)]<-3
 
-moa_counts<-table(prism_cluster_all$moa)
-moa_counts<-names(moa_counts[moa_counts > 5])
-prism_cluster_all_test <- prism_cluster_all[prism_cluster_all$moa %in% moa_counts, ]
+# Empty list to store mode of actions
+moa_counts_sel <- list()
+
+# Loop through each dataframe
+for (df in list(prism.cluster1, prism.cluster2, prism.cluster3)) {
+  moa_counts <- table(df$moa)
+  moa_counts_sel[[length(moa_counts_sel) + 1]] <- names(moa_counts[moa_counts > 5])
+}
+#combine moa of the three clusters
+combined_moa <- unique(unlist(moa_counts_sel))
+prism_cluster_all_often <- prism_cluster_all[prism_cluster_all$moa %in% combined_moa, ]
 
 # Number of unique categories
-num_categories <- length(unique(prism_cluster_all_test$moa))
+#length(unique(prism_cluster_all_often$moa))
 # Create a color palette using rainbow colors
-library(RColorBrewer)
-color_palette <- pal.bands(polychrome)
-
+library(pals)
 library(ggplot2)
-ggplot(prism_cluster_all_test, aes(x = cluster, fill = moa)) +
+ggplot(prism_cluster_all_often, aes(x = cluster, fill = moa)) +
   geom_bar() +
-  scale_fill_manual(values = color_palette) +
+  scale_fill_manual(values= cols25(25)) +
   labs(x = "Cluster", y = "Mode of actions", title = "Mode of actions in highly effectivte drug clusters") +
   theme_minimal()
 ```
@@ -705,7 +715,9 @@ table(prism.treat.kidney.high_effect_drugs$target)[which(as.numeric(table(prism.
 
 ##### for gene expression
 
-Principal component analysis was performed in order to find out if there are similarities within cell lines.
+Principal component analysis was performed in order to find out if there are similarities within cell lines to possibly reduce the dataset and to present the underlying structure of the data.
+WHile some cell lines cluster very good together and seem to have a lot of similarities so similar gene expression profiles (e.g. skin, central nervous system, bone), other cell lines have widely spread gene expressions (e.g. ovary, upper aerodigestive).
+Kidney cell lines cluster relatively good together.
 
 ```{r PCA_gene_expr, echo=FALSE}
 pca_exp_celllines=prcomp(prism.exp, center=FALSE, scale=FALSE)
@@ -719,10 +731,10 @@ plot_wCells.exp = merge(toplot.exp, celllines.exp, by = "DepMap_ID")
 # Plot
 ggplot(plot_wCells.exp, 
        aes(x = PC1, y = PC2, color = lineage)) +
-  geom_point() 
-```
+  geom_point() +
+  labs(title = "PC1/PC2 biplot of gene expression")
 
-Soft-tissue-celllines and central-nervous-system-celllines seem to cluster together while prostate and kidney cancer are widely spread over the plot.
+```
 
 ##### for copy number variation
 
@@ -738,8 +750,11 @@ plot_wCells.cnv = merge(toplot.cnv, celllines.cnv, by = "DepMap_ID")
 # Plot
 ggplot(plot_wCells.cnv, 
        aes(x = PC1, y = PC2, color = lineage)) +
-  geom_point()
+  geom_point()+
+  labs(title="PC1/PC2 for copy number variation")
 ```
+
+Contrarly to the expression principal components, the copy number variation within a cell type is highly dispersed for all cell lines, providing further prove for the missing correlation between copy number variation and gene expression.
 
 ##### for knockout scores
 
@@ -757,8 +772,11 @@ plot_wCells.achilles = merge(toplot.achilles, celllines.achilles, by = "DepMap_I
 # Plot
 ggplot(plot_wCells.achilles, 
        aes(x = PC1, y = PC2, color = lineage)) +
-  geom_point()
+  geom_point()+
+  labs(title="PC1/PC2 for achilles knockout scores")
 ```
+
+Principal component analysis for achilles knockout scores revealed that the cell lines of one cell type are relatively widely spread with exception for kidney cell lines, showing a unique close clustering.
 
 ### linear regression
 
