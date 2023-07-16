@@ -1,0 +1,288 @@
+---
+title: "REGRESSION EXP ACHILLES CNV"
+author: "Arne Weigelt"
+date: "2023-07-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+LOAD THE ORIGINAL DATAFRAMES
+
+```{r kidney_datasets}
+
+#rownumbers of prism.cl with Kidney Cancer
+which(prism.cl$disease== "Kidney Cancer")
+
+prism.cl.kidney= prism.cl[c(which(prism.cl$disease== "Kidney Cancer")),]
+
+#Gives back all cell lines which are kidney-cancer-cell lines
+kidney_celllines=print(prism.cl.kidney[,1])
+
+#Gives back all cell line ACh-numbers which are cancer-cell lines
+kidney_celllines_ACH=rownames(prism.cl.kidney)
+
+#stores only kidney cancer cell lines from other datasets in a new one
+prism.exp.kidney= prism.exp[kidney_celllines, ]
+
+#stores only kidney cancer cell lines from other datasets in a new one
+prism.cnv.kidney= prism.cnv[kidney_celllines, ]
+
+#for prism dataset
+prism.kidney= prism[rownames(prism) %in% kidney_celllines,]
+
+#for prism.achilles
+prism.achilles.kidney= prism.achilles[rownames(prism.achilles) %in% kidney_celllines,]
+```
+
+```{r Sortieren von exp und cnv}
+
+#identify missing columns that are present in cnv but not in exp
+diff_cols= setdiff(colnames(prism.cnv.kidney), colnames(prism.exp.kidney))
+diff_cols= unique(c(diff_cols, setdiff(colnames(prism.exp.kidney), colnames(prism.cnv.kidney))))
+
+diff_cols2= setdiff(colnames(prism.exp.kidney), colnames(prism.cnv.kidney))
+diff_cols2= unique(c(diff_cols, setdiff(colnames(prism.cnv.kidney), colnames(prism.exp.kidney))))
+prism.cnv.kidney_cleaned=prism.cnv.kidney[-which(colnames(prism.cnv.kidney) %in% diff_cols)]
+prism.exp.kidney_cleaned=prism.exp.kidney[-which(colnames(prism.exp.kidney) %in% diff_cols2)]
+
+#reorder rows in an ascending way
+#1.step:rownames(prism.cnv_corr_cleaned)
+prism.cnv.kidney_cleaned= prism.cnv.kidney_cleaned[order(rownames(prism.cnv.kidney_cleaned)),]
+prism.exp.kidney_cleaned= prism.exp.kidney_cleaned[order(rownames(prism.exp.kidney_cleaned)),]
+
+#reorder columns by names
+prism.cnv.kidney_cleaned= prism.cnv.kidney_cleaned[,colnames(prism.exp.kidney_cleaned)]
+```
+To further examine the relationship between CNV and expression in kidney cancer a linear regression was performed. The previously created prism.exp.kidney_cleaned and prism.cnv.kidney_cleaned were subjugated to a lm() function. 
+```{r}
+# Perform linear regression for each cell line
+predicted_exp= data.frame(matrix(NA, nrow = nrow(prism.exp.kidney_cleaned), ncol = ncol(prism.exp.kidney_cleaned)))
+rownames(predicted_exp)= rownames(prism.exp.kidney_cleaned)
+colnames(predicted_exp)= colnames(prism.exp.kidney_cleaned)
+
+for (cell_line in rownames(prism.exp.kidney_cleaned)) {
+  # Subset the CNV and expression data for the current cell line
+  cnv_pre= t(data.frame(prism.cnv.kidney_cleaned[cell_line, , drop = FALSE]))
+  exp_pre= t(data.frame(prism.exp.kidney_cleaned[cell_line, , drop = FALSE]))
+
+  # Merge the expression and CNV data by gene
+  for_lm= merge(exp_pre, cnv_pre, by = 0)
+  colnames(for_lm)= c("gene", "exp", "cnv")
+  
+  # Fit the linear regression model using the training data
+  model= lm(exp ~ cnv, data = for_lm)
+  
+  # Predict the expression values using the CNV data
+  predicted_exp[cell_line, ]= predict(model, newdata = data.frame(cnv = for_lm$cnv))
+}
+
+summary(model)$r.squared
+```
+Linear Regression for expression and CNV data of each kidney cancer cell line.
+The predicted_exp data frame contains the predicted expression values for each cell line based on a linear regression model using CNV data as the predictor variable. Each row of predicted_exp corresponds to a specific cell line while each column represents predicted expression values for particular genes. The models respective R-squared value of 0.01 shows - as already suggested by the exp-cnv correlation matrix - that CNV alone acts as a poor predictor for gene expression. For instance, DNA-methylation, micro-RNAs and Transcription Factors and other regulatory mechanisms play a vital role in regultaing gene expression. Further studies also indicated that especially cancer cells show a poor relationship between CNV and gene expression to possibly deal with increased genome aneuploidy. (QUELLE=https://www.sciencedirect.com/science/article/pii/S2666379121001981)
+
+
+```{r}
+# Extract coefficients from the model
+coefficients= coef(model)
+
+# Extract slope and intercept from coefficients
+slope= coefficients[2]
+intercept= coefficients[1]
+
+# Create a data frame for plotting the linear function
+plot_data= data.frame(cnv = seq(min(prism.cnv.kidney_cleaned), max(prism.cnv.kidney_cleaned), length.out = 100))
+plot_data$predicted_exp= intercept + slope * plot_data$cnv
+
+# Get confidence intervals using the predict function
+conf_int= predict(model, newdata = data.frame(cnv = plot_data$cnv), interval = "confidence", level = 0.95)
+
+# Merge confidence intervals into the plot data
+plot_data= cbind(plot_data, conf_int)
+
+# Calculate R-squared value
+r_squared= summary(model)$r.squared
+
+# Create the plot for model
+ggplot(plot_data, aes(x = cnv, y = predicted_exp)) +
+  geom_line(color = "blue", linewidth = 1) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey", alpha = 0.3) +
+  geom_text(aes(label = paste("Predicted Expression =", round(slope, 2), " * CNV +", round(intercept, 2))), 
+            x = min(prism.cnv.kidney_cleaned) + 0.001 * (max(prism.cnv.kidney_cleaned) - min(prism.cnv.kidney_cleaned)), 
+            y = min(plot_data$predicted_exp) + 0.65 * (max(plot_data$predicted_exp) - min(plot_data$predicted_exp)), 
+            hjust = 0, vjust = 0) +  # Positioning
+  annotate("text", x = min(prism.cnv.kidney_cleaned) + 0.001 * (max(prism.cnv.kidney_cleaned) - min(prism.cnv.kidney_cleaned)), 
+           y = min(plot_data$predicted_exp) + 0.55 * (max(plot_data$predicted_exp) - min(plot_data$predicted_exp)), 
+           label = paste("R^2 =", round(r_squared, 2)), hjust = 0, vjust = 0, size = 4) +  
+  labs(x = "CNV", y = "Predicted Expression") +
+  ggtitle("Linear Function of lm(exp ~ cnv) with 95% confidence interval") +
+  theme_minimal()
+
+```
+Linear Function of lm(exp ~ cnv) with 95% confidence interval.
+For the 1% of the datapoints were the model can explain a significant degree of variance, an increase of expression is mitigated by higher CNV.
+
+
+```{r}
+# Calculate R-squared value
+r_squared <- summary(model)$r.squared
+
+# Calculate residuals
+residuals <- as.vector(t(prism.exp.kidney_cleaned)) - as.vector(t(predicted_exp))
+
+# Calculate the threshold for highlighting
+highlight_threshold <- sqrt(1 - r_squared)
+
+Actual = as.vector(t(prism.exp.kidney_cleaned))
+Predicted = as.vector(t(predicted_exp))
+`lm explains var` = abs(residuals) <= highlight_threshold
+
+# Create a data frame with residuals and highlight column
+data_to_plot <- data.frame(Actual,Predicted, residuals,`lm explains var`)
+
+# Create the scatter plot for model with highlighted data points
+library(ggplot2)
+
+ggplot(data = data_to_plot, aes(x = Actual, y = Predicted, color = `lm explains var`)) +
+  geom_point(size = 1) +
+  scale_color_manual(values = c("FALSE" = "grey", "TRUE" = "blue"), name = "lm explains var") +
+  geom_abline(slope = 1, intercept = 0, linetype = "solid", color = "red", size = 1) +  # Add red continuous line
+  labs(x = "Actual Expression", y = "Predicted Expression") +
+  ggtitle("Actual vs. Predicted Expression by lm(exp ~ cnv) ") +
+  theme_minimal()
+```
+Predicted Expression by lm(exp ~ cnv) vs. Actual expression .
+This plot shows the relationship between the predicted expression by lm(exp ~ cnv) to the actual expression values of prism.exp.kidney_cleaned. Each dot represents a gene with the actual expression as x-coordinate and the predicted one as y-coordinate. The variation of the blue genes can be  explained by the linear regression model. The variation of grey genes cannot be explained by the model. Their variation is not within the R-squared value. A perfect model with a R-squared of 1 would show all genes on the red line y=x.
+
+
+```{r USING PRISM:ACHILLES AS PREDICTOR}
+
+# Identify common columns between the datasets
+common_cols= intersect(colnames(prism.achilles.kidney), colnames(prism.exp.kidney))
+
+# Create cleaned datasets with only the common columns
+prism.achilles.kidney_cleaned= prism.achilles.kidney[, common_cols]
+prism.exp.kidney_cleanedA= prism.exp.kidney[, common_cols]
+
+# Reorder rows in an ascending way based on rownames
+prism.achilles.kidney_cleaned= prism.achilles.kidney_cleaned[order(rownames(prism.achilles.kidney_cleaned)),]
+prism.exp.kidney_cleanedA= prism.exp.kidney_cleanedA[order(rownames(prism.exp.kidney_cleanedA)),]
+
+# Reorder columns by names
+prism.achilles.kidney_cleaned= prism.achilles.kidney_cleaned[, colnames(prism.exp.kidney_cleanedA)]
+
+# Get the common row names between the datasets
+common_row_names= intersect(rownames(prism.achilles.kidney_cleaned), rownames(prism.exp.kidney_cleanedA))
+
+# Subset prism.exp.kidney_cleanedA to keep only the rows present in prism.achilles.kidney_cleaned
+prism.exp.kidney_cleanedA= prism.exp.kidney_cleanedA[common_row_names, ]
+
+# Reorder rows in both datasets based on common row names
+prism.achilles.kidney_cleaned= prism.achilles.kidney_cleaned[common_row_names, ]
+prism.exp.kidney_cleanedA= prism.exp.kidney_cleanedA[common_row_names, ]
+
+```
+
+```{r}
+# Check if row names match between the two datasets
+rownames_match= all(rownames(prism.achilles.kidney_cleaned) == rownames(prism.exp.kidney_cleanedA))
+
+  # Perform linear regression for each cell line
+  predicted_expA= data.frame(matrix(NA, nrow = nrow(prism.exp.kidney_cleanedA), ncol = ncol(prism.exp.kidney_cleanedA)))
+  rownames(predicted_expA)= rownames(prism.exp.kidney_cleanedA)
+  colnames(predicted_expA)= colnames(prism.exp.kidney_cleanedA)
+
+  for (cell_line in rownames(prism.exp.kidney_cleanedA)) {
+    # Subset the Achilles and expression data for the current cell line
+    achilles_preA= t(data.frame(prism.achilles.kidney_cleaned[cell_line, , drop = FALSE]))
+    exp_preA= t(data.frame(prism.exp.kidney_cleanedA[cell_line, , drop = FALSE]))
+
+    # Merge the expression and Achilles data by gene
+    for_lmA= merge(exp_preA, achilles_preA, by = 0)
+    colnames(for_lmA)= c("gene", "exp", "achilles")
+
+    # Fit the linear regression model using the training data
+    modelA= lm(exp ~ achilles, data = for_lmA)
+
+    # Predict the expression values using the Achilles data
+    predicted_expA[cell_line, ]= predict(modelA, newdata = data.frame(achilles = for_lmA$achilles))
+  }
+
+  summary(modelA)$r.squared
+```
+
+```{r}
+# Extract coefficients from the model
+coefficientsA= coef(modelA)
+
+# Extract slope and intercept from coefficients
+slopeA= coefficientsA[2]
+interceptA= coefficientsA[1]
+
+# Create a data frame for plotting the linear function
+plot_dataA= data.frame(achilles = seq(min(prism.achilles.kidney_cleaned), max(prism.achilles.kidney_cleaned), length.out = 100))
+plot_dataA$predicted_exp= interceptA + slopeA * plot_dataA$achilles
+
+# Get confidence intervals using the predict function
+conf_intA= predict(modelA, newdata = data.frame(achilles = plot_dataA$achilles), interval = "confidence", level = 0.95)
+
+# Merge confidence intervals into the plot data
+plot_dataA= cbind(plot_dataA, conf_intA)
+
+# Calculate R-squared value
+r_squared_A= summary(modelA)$r.squared
+
+# Create the plot for modelA
+ggplot(plot_dataA, aes(x = achilles, y = predicted_exp)) +
+  geom_line(color = "blue", linewidth = 1) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey", alpha = 0.3) +
+  geom_text(aes(label = paste("Predicted Expression =", round(slopeA, 2), " * Achilles +", round(interceptA, 2))), 
+            x = min(prism.achilles.kidney_cleaned) + 0.001 * (max(prism.achilles.kidney_cleaned) - min(prism.achilles.kidney_cleaned)), 
+            y = min(plot_dataA$predicted_exp) + 0.45 * (max(plot_dataA$predicted_exp) - min(plot_dataA$predicted_exp)), 
+            hjust = 0, vjust = 0) +  # Position on the left side, a bit lower
+  annotate("text", x = min(prism.achilles.kidney_cleaned) + 0.001 * (max(prism.achilles.kidney_cleaned) - min(prism.achilles.kidney_cleaned)), 
+           y = min(plot_dataA$predicted_exp) + 0.35 * (max(plot_dataA$predicted_exp) - min(plot_dataA$predicted_exp)), 
+           label = paste("R^2 =", round(r_squared_A, 2)), hjust = 0, vjust = 0, size = 4) +  # Position on the left side, a bit lower
+  labs(x = "Achilles", y = "Predicted Expression") +
+  ggtitle("Linear Function of lm(exp ~ achilles)") +
+  theme_minimal()
+
+```
+Linear Function of lm(exp ~ achilles) with 95% confidence interval.
+15% of the variability in the predicted expression can be explained by Gene Knock-out scores.The negative slope where higher achilles scores are associated with a decrease in gene expression might suggest, that the model possibly fits especially well for tumorsupressor genes. Nonetheless these interpretations must be done with extreme caution due to the poor fit of the regression model as well as the fact, that tumor supressor gene expression also underlies regulatory processes within the cell such as micro-RNAs and DNA-methylation. (QUELLE:https://www.cell.com/molecular-therapy-family/nucleic-acids/fulltext/S2162-2531(22)00337-7)
+
+```{r}
+# Calculate R-squared value
+r_squaredA <- summary(modelA)$r.squared
+
+# Calculate residuals
+residualsA <- as.vector(t(prism.exp.kidney_cleanedA)) - as.vector(t(predicted_expA))
+
+# Calculate the threshold for highlighting
+highlight_thresholdA <- sqrt(1 - r_squaredA)
+
+ActualA = as.vector(t(prism.exp.kidney_cleanedA))
+PredictedA = as.vector(t(predicted_expA))
+`lm explains var` = abs(residualsA) <= highlight_thresholdA
+
+# Create a data frame with residuals and highlight column
+data_to_plotA <- data.frame(ActualA, PredictedA, residualsA, `lm explains var`)
+
+# Create the scatter plot for model with highlighted data points
+library(ggplot2)
+
+ggplot(data = data_to_plotA, aes(x = ActualA, y = PredictedA, color = `lm explains var`)) +
+  geom_point(size = 1) +
+  scale_color_manual(values = c("FALSE" = "grey", "TRUE" = "blue"), name = "lm explains var") +
+  geom_abline(slope = 1, intercept = 0, linetype = "solid", color = "red", size = 1) +  # Add red continuous line
+  labs(x = "Actual Expression", y = "Predicted Expression") +
+  ggtitle("Actual vs. Predicted Expression by lm(exp ~ cnv) ") +
+  theme_minimal()
+
+```
+Predicted Expression by lm(exp ~ achilles) vs. Actual expression .
+This plot shows the relationship between the predicted expression by lm(exp ~ achilles) to the actual expression values of prism.exp.kidney_cleanedA. In the prism.achilles dataset are only 11 of the 17 kidney cancer cell lines as well as different genes. Therefore both datasets were subjugated to further data clean-up.  Dots represent  genes with the actual expression as x-coordinate and  the predicted value as y-coordinate. The variation of the blue genes can be  explained by the  regression model. The variation of the majority-forming grey genes cannot be explained by the model. Their variation is not within the R-squared value. A perfect model with a R-squared of 1 would show all genes on the red line y=x.
+
