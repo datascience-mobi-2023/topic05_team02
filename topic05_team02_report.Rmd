@@ -16,14 +16,14 @@ bibliography: topic05_team02_references.bib
 
 ## Introduction
 
+!!!!!!!!!!!!!!!!!!!! Beschreibung der Fragestellung, Vorstellung der publizierten Vorarbeiten,\...
+
 The repurposing of non-oncology drugs, is one way to find potential treatments for cancer in the future.
 This offers several advantages over the development of new drugs.
 For example, initial study phases can be shortened or skipped altogether because studies have already been completed.
-So time and money can be saved through that @Pushpakom_2018 @Corsello_2020.
+So time and money can be saved through that (@Pushpakom_2018 , @Corsello_2020).
 
 Many drugs interact with multiple targets and biological pathways beyond their originally intended purpose.
-
-Beschreibung der Fragestellung, Vorstellung der publizierten Vorarbeiten,\...
 
 ## Material and Methods
 
@@ -32,22 +32,32 @@ load("C:/Users/Jessica Albrecht/Desktop/Uni/BioInfo Project/cellline_datasets.rd
 load("C:/Users/Jessica Albrecht/Desktop/Uni/BioInfo Project//prism_datasets.rda")
 ```
 
-The data we used for the project was published by Corsello et al. @Corsello_2020 and Dempster et al. @Dempster_2019.
-
-bitte hier die Referenzen der Publikationen/Webseiten, aus denen die Daten stammen, und die Beschreibung der Methoden, die benutzt wurden.
+The data we used for the project was published by Corsello et al. (@Corsello_2020) and Dempster et al. (@Dempster_2019).
 
 #### What data do we have and what does it tell us?
 
-prism.exp: This dataset shows the Transcripts per million of the genes (columns) for the cell lines (rows).
-prism.treat: The dataset shows for each treatment (rows) information about the drugs and dosis.
-prism: This dataset shows the treatment effects (columns) on the cell growth for each cell line (rows).
-prism.achilles: This dataset shows gene knockout-scores, representing the importance of one gene for cell survival, of every gene (columns) for the cell lines (rows).
-prism.cnv:
+| data set         | explanation                                                                                                                        |
+|------------------|------------------------------------------------------|
+| `prism.exp`      | Transcripts per million of the genes (columns) for the cell lines (rows)                                                           |
+| `prism.treat`    | information about each drug (rows) and dosis                                                                                       |
+| `prism`          | treatment effects (columns) on the cell growth for each cell line (rows)                                                           |
+| `prism.achilles` | gene knockout-scores, representing the importance of one gene for cell survival, of every gene (columns) for the cell lines (rows) |
+| `prism.cnv`      | copy number values of the genes (columns) for the cell lines (rows)                                                                |
+| `prism.cl`       | provides further information about the cell lines (rows)                                                                           |
+| `prism.snv`      | further information about the genes (rows)                                                                                         |
 
 ### data cleanup
 
 Before we started to work with our data sets, we first had to do some data cleanup.
 For that we generated some sub-data sets for the 17 kidney cancer cell lines and for some areas of application we needed to set NA-values to zero.
+
+We set the rownames of prism.cl as cell line names and deleted some rows with information which was not further needed to reduce the amount of data we had.
+
+To get a deeper insight into kidney cancer, we had to take a closer look at the corresponding data.
+For this purpose, we extracted sub-datasets from the various prism datasets and saved them as `prism.[...].kidney` .
+
+We have also created lists for `prism`, its top variance(\>= 75% quantile ) `prism_var_list` and `prism.exp`.
+In these, the sub-datasets for all cancer types analyzed, are separately accessible such as for Sarcoma: `prism_list[["Sarcoma"]]` .
 
 ```{r cleanup_cols_prism.cl, include=FALSE}
 #reorder columns of prism.cl
@@ -155,21 +165,28 @@ prism_exp_list[["lung cancer"]]
 # Access other cancer types similarly
 ```
 
-### STatistical tests
+### Statistical tests
 
-##Kolmogorov-Smirnov-test The Kolgomogorov-SMirnov-test can be a one-sample or a two-sample test.
+#### Kolmogorov-Smirnov-test
+
+The Kolgomogorov-Smirnov-test can be a one-sample or a two-sample test.
 In this report only the one-sample test was used.
-The null-hypothesis of this test is: "The random variable X follows the probability distribution F0." The empiric distribution Fn is then compared to the given distribution F0.
+The null-hypothesis of this test is: "The random variable X follows the probability distribution F~0~." The empiric distribution F~n~ is then compared to the given distribution F~0~.
 The comparitive characteristic is the maximal distance between the two distributions.
-The larger the distance the less likely it is for F0 to follow Fn.
+The larger the distance the less likely it is for F~0~ to follow F~n~.
+
+#### Anderson-Darling-test 
+
+The `ad.test()` allows conclusions about wheater a given data sample follows a particular distribution or not.
+In contrast to the Kolmogorov-Smirnov test, more attention is paid to the tails and in R it is possible to consider larger data sets.
 
 ## Results
 
-Darstellung der Ergebnisse und Abbildungen
+!!!!!!!!!!!!!!!!!!!! Darstellung der Ergebnisse und Abbildungen
 
 ### descriptive statistics
 
-For a quick overview of the content we printed the headlines of the data sets for example for prism.cl.
+For a quick overview of the content we printed the headlines of the data sets for example for `prism.cl`.
 
 ```{r head_prism.cl, echo=FALSE}
 head(prism.cl)
@@ -186,10 +203,7 @@ hist(unlist(prism.achilles), breaks = 60,main = "Histogram of prism.achilles", x
 hist(unlist(prism.cnv), main= "Histogram of prism.cnv", xlab="copy number variation", breaks=60)
 ```
 
-The data distribution of prism.exp, prism.achilles, prism.cnv and prism is not normaly distributed [Anderson-Darling normality test (p-value \< 2.2e-16)].
-The Anderson-Darling test allows conclusions about wheater a given data sample follows a particular distribution or not.
-Here we checked against normal distribution.
-In contrast to the Kolmogorov-Smirnov test, more attention is paid to the tails and it is possible to consider larger data sets.
+The data distribution of `prism.exp`, `prism.achilles`, `prism.cnv` and `prism` is not normally distributed which was confirmed by `ad.test()` with a p-value\< 2.2e-16.
 
 ```{r check_normal_distribution, include=FALSE}
 #values as vectors
@@ -220,8 +234,8 @@ boxplot(
   names=c("prism", "prism.cnv", "prism.achilles"))
 ```
 
-The boxplot of the data shows small inter quartile ranges for prism.cnv and prism.achilles and a bigger range for the prism data set.
-This means we have more spreaded values for prism than for the other two data sets.
+The boxplot of the data shows small inter quartile ranges for `prism.cnv` and `prism.achilles` and a bigger range for the `prism` data set.
+This means we have more spreaded values for `prism` than for the other two data sets.
 
 #### Correlation
 
@@ -229,7 +243,7 @@ This means we have more spreaded values for prism than for the other two data se
 
 In order to search for high effective drugs, targeting essential genes of kidney cancer different steps are needed to be done.
 
-First, calculating the correlation between the achilles knock-out scores and the expression values for each gene, results in correlation values which indicate how essential the genes are.
+First: calculating the correlation between the achilles knock-out scores and the expression values for each gene, results in correlation values which indicate how essential the genes are.
 To calculate the correlation correctly, it is necessary to have the same size and order of data in both data sets.
 
 ```{r essential_genes, include=FALSE}
@@ -287,10 +301,11 @@ qu<-quantile(correlation_ach_exp_kidney, 0.02, na.rm = TRUE)
 abline(v=c(-qu,qu))
 ```
 
-###### **Which drugs do have a high negative effect on the cell lines?**
+###### **Which drugs do have a high negative effect on the kidney cancer cell lines?**
 
 In order to slow down or even prevent the growth of tumor cells, we are looking for drugs of which a negative value was obtained in the prism screening.
 Since the effect should be as strongly negative as possible, it was decided, after considering the distribution of prism values, to classify drugs below a threshold of the 2% quartile of prism values as highly effective drugs.
+This resulted in 429 unique drugs and 668 different drug-dose combinations.
 
 ```{r neg_effect_drugs, include=FALSE}
 #Set threshold depending on the distribution of prism 
@@ -328,7 +343,9 @@ targetgenes_high_effect_drugs_kidney <- targetgenes_high_effect_drugs_kidney[!is
 #print(targetgenes_high_effect_drugs_kidney)
 ```
 
-After identifying both essential genes and the target genes of the highly effective drugs, we then searched for overlaps between these two groups.
+###### Which genes are target genes? 
+
+After identifying both, essential genes and the target genes of the highly effective drugs, we then searched for overlaps between these two groups.
 
 ```{r venn_genes, include=FALSE}
 # Create a list of the gene names in each vector
@@ -412,6 +429,28 @@ correlation_plot<-ggplot(df_corr_ach_exp_kidney_intr_targets, aes(x = Genes, y =
 
 ```
 
+```{r}
+prism.exp.kidney_intr_targets <- prism.exp.kidney[, colnames(prism.exp.kidney) %in% intr_targets]
+
+hist(unlist(prism.exp.kidney_intr_targets), breaks = 20, main = "Histogram of TPM-values of intresting target genes")
+
+library(pheatmap)
+library(RColorBrewer)
+pheatmap_prism.exp.kidney_intr_targets<-pheatmap(as.matrix(prism.exp.kidney_intr_targets), 
+         cluster_cols = TRUE, 
+         color= brewer.pal(9, "Blues"),
+         border_color = NA,
+         scale = "none",
+         cluster_rows = FALSE,
+         main = "Transcripts per million of interesting target genes",
+         angle_col = 45,
+         na_col = "orange",
+         legend = TRUE,
+         legend_breaks = c(3,6,9),
+         legend_labels = c("low","middle","high")
+         )
+```
+
 ##### between copy number variation and expression
 
 As genes lead to the production of effector molecules (mRNA, proteins, etc.) it is interesting to see if a gene product associated with a disease (as disease inhibiting or disease promoting factor) can be amplified by a higher or reduced by a lower (0 or 1) number of gene copies in the genome.
@@ -448,7 +487,7 @@ prism.cnv_corr_cleaned= prism.cnv_corr_cleaned[,colnames(prism.exp_corr_cleaned)
 
 The correlation was computed for each gene once using only the kidney cell line samples and once for the whole data set.
 The whole-cell-line correlations show a lower dispersion (values rangig from -0.24 to +0.78) than the correlations computed with only kidney cell lines (range: -0.78 to +0.96) which can be explained by the amount of data.
-While 16% of the overall correlation values lie below 0, kidney cell lines had showed lower correlation value (34.7% \<0) Overall, for some genes copy number variation seems to be highly correlated for some genes (high copy number variation-\> high gene expression), while for others there's even a negative correlation observable (high cnv-\> low exp).
+While 16% of the overall correlation values lie below 0, kidney cell lines had showed lower correlation value (34.7% \<0) Overall, for some genes copy number variation seems to be highly correlated (high copy number variation-\> high gene expression), while for others there's even a negative correlation observable (high cnv-\> low exp).
 As the histogram of the correlation values of kidney cell lines seems normally distributed, normality tests were performed.
 
 ```{r corr_exp_cnv, include=FALSE}
@@ -487,11 +526,11 @@ hist(final_cor)
 hist(kidney_cor)
 ```
 
-As the sample size exceeds 5000 it was not possible to perform a Shapiro-Wilks test, so for a first analysis a qqplot was plotted (kidney correlation values against a random normal distibution with n= sample size of correlation values and mean= mean of correlation values).
+As the sample size exceeds 5000 it was not possible to perform a Shapiro-Wilks test, so for a first analysis a qqplot was plotted (kidney correlation values against a random normal distibution with `n= sample size` of correlation values and `mean= mean` of correlation values).
 The line showing normal distribution did not align with the plotted values.
-To confirm this result, a Kolmogorov-Smirnov test was performed.
-In this case F0=rnorm and Fn=kidney_cor (distribution of kidney cell lines correlation values between cnv and exp).
-The p-value below 2.2e-16 so with a significance level of 5% the 0-hypothesis "F0 follows Fn" must be rejected.
+To confirm this result, a Kolmogorov-Smirnov test (@LotharSachs2006) was performed.
+In this case F~0~=`rnorm` and F~n~=`kidney_cor` (distribution of kidney cell lines correlation values between cnv and exp).
+The p-value below 2.2e-16 so with a significance level of 5% the F~0~-hypothesis "F~0~ follows F~n~" must be rejected.
 Kidney correlation values are not normally distributed.
 
 <https://www.bing.com/videos/search?q=kolmogorov-smirnov+test&&view=detail&mid=DFFE9293A619B4D51667DFFE9293A619B4D51667&&FORM=VRDGAR&ru=%2Fvideos%2Fsearch%3Fq%3Dkolmogorov-smirnov%2Btest%26FORM%3DHDRSC4> <https://de.wikipedia.org/wiki/Kolmogorow-Smirnow-Test>
@@ -511,7 +550,7 @@ ks.test(kidney_cor, "pnorm", mean=mean(kidney_cor, na.rm = TRUE))
 
 In order to find out if a specific drug mode of action and/or target and therefore pathways are overrepresented in cancer which would give a guiding principle for further drug research, k-means clustering was performed on the highly effective drugs.
 The analysis was carried out for cancer in general (high effective drugs on all-cell-line data frame) and for kidney cancer (high effective drugs in kidney cell lines).
-First, a data frame containing only the upper 2% quantile of effective drugs was extracted from the prism data frame.
+First, a data frame containing only the upper 2% quantile of effective drugs was extracted from the `prism` data frame.
 
 ```{r prism.treat_subset_high_eff_drugs, eval=FALSE, include=FALSE}
 #Set threshold depending on the distribution of prism 
@@ -547,7 +586,7 @@ plot(1:15,wss_prism,type='b',pch=19,xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
 ```
 
-To further analyse the cluster contents, a data frame for each cluster was created and several characteristics (mode of action, targets,disease area, ...) compared.
+To further analyse the cluster contents, a data frame for each cluster was created and several characteristics (mode of action, targets, disease area, ...) compared.
 
 ```{r eval=FALSE, include=FALSE}
 #identification of cluster content
@@ -612,7 +651,7 @@ ggplot(prism_cluster_all_test, aes(x = cluster, fill = moa)) +
   theme_minimal()
 ```
 
-##### of highly effective drugs in kidney cell lines(2% quantile)
+##### of highly effective drugs in kidney cell lines (2% quantile)
 
 ```{r cluster_kidney_cl, echo=FALSE}
 par(mfrow = c(1,2))
@@ -660,7 +699,7 @@ table(prism.treat.kidney.high_effect_drugs$target)[which(as.numeric(table(prism.
 
 ##### for gene expression
 
-Principal component analysis was performed in order to find out if there are similarities within cell lines
+Principal component analysis was performed in order to find out if there are similarities within cell lines.
 
 ```{r PCA_gene_expr, echo=FALSE}
 pca_exp_celllines=prcomp(prism.exp, center=FALSE, scale=FALSE)
@@ -715,48 +754,8 @@ ggplot(plot_wCells.achilles,
   geom_point()
 ```
 
-### gibts das 2x ??? - Is there a correlation between gene expression and copy number variation?
-
-```{r eval=FALSE, include=FALSE}
-cor_g<-matrix()
-for (g in colnames(prism.exp_corr_cleaned)) {  
-  valse_g = prism.exp_corr_cleaned[,colnames(prism.exp_corr_cleaned) == g]  
-  valsc_g = prism.cnv_corr_cleaned[,colnames(prism.cnv_corr_cleaned) == g]  
-  cor_g[[g]]=cor(valse_g, valsc_g, method= c("spearman"))  
-}  
-final_cor = t(data.frame(cor_g))
-h= hist(final_cor)
-sum(h$counts[(which(h$breaks <= 0))])
-sum(h$counts)
-sum(h$counts[(which(h$breaks <= 0))])/sum(h$counts)
-
-#correlation values for kidney cell lines
-cor_kidney<-matrix()
-for (g in colnames(prism.exp_corr_cleaned)) {  
-  valse_g_kidney = prism.exp_corr_cleaned[rownames(prism_exp_list[["Kidney Cancer"]]),colnames(prism.exp_corr_cleaned) == g]  
-  valsc_g_kidney = prism.cnv_corr_cleaned[rownames(prism_exp_list[["Kidney Cancer"]]),colnames(prism.cnv_corr_cleaned) == g]  
-  cor_kidney[[g]]=cor(valse_g_kidney, valsc_g_kidney, method= c("spearman"))  
-}  
-kidney_cor = t(data.frame(cor_kidney))
-hist(kidney_cor)
-```
-
-While the general correlation values are widely spread between -0.4 and 0.8 with most values lying on the positive side (84%), the correlation values for kidney cancer seem to normally distributed around 0.025 but with more values having a negative correlation value (34.6%)-\> Statistical test
-
-As the sample size is too large for a Shapiro Wilks test, a qqplot plotting a normal distribution with mean=mean(kidney correlation values) against kidney correlation values was performed.
-It shows a clear line.
-
-```{r eval=FALSE, include=FALSE}
-qqplot(rnorm(18560,mean=mean(kidney_cor, na.rm = TRUE)),kidney_cor)
-ks.test(kidney_cor, "pnorm", mean=mean(kidney_cor, na.rm = TRUE))
-```
-
-As p-value \< 2.2e-16, the H~0~-hypothesis must be rejected, so the data is not normally distributed.
-
 ### linear regression
 
 ## Discussion
-
-kurze Zusammenfassung der Ergebnisse, Diskussion über gewonnen Erkenntnisse, Einschränkungen in der Analyse
 
 ## References
