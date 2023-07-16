@@ -564,32 +564,28 @@ for(i in 1:3){
 prism.cluster1<-prism.treat[names(prism_cluster_list[[1]]),]
 prism.cluster2<-prism.treat[names(prism_cluster_list[[2]]),]
 prism.cluster3<-prism.treat[names(prism_cluster_list[[3]]),]
-#mode of action
-prism.cluster3$moa[which(table(prism.cluster3$moa)!=0)]
-dotchart(as.numeric(table(prism.cluster1$moa)))
-prism.cluster1.moa<-which(as.numeric(table(prism.cluster1$moa))>10)
-prism.cluster.1.moa<-table(prism.cluster1$moa)[prism.cluster1$moa]
-prism.cluster.2.moa<-table(prism.cluster2$moa)[which(as.numeric(table(prism.cluster2$moa))>10)]
-prism.cluster.3.moa<-table(prism.cluster3$moa)[which(as.numeric(table(prism.cluster3$moa))>10)]
-dotchart(as.numeric(table(prism.treat.high_effect_drugs$moa)))
-prism.moa<-table(prism.treat.high_effect_drugs$moa)[which(as.numeric(table(prism.treat.high_effect_drugs$moa))>10)]
-prism_cluster_all$moa[which(table(prism.treat.high_effect_drugs$moa)>5)]
-#disease area
-prism.cluster2$disease.area
-table(prism.cluster2$disease.area)
-table(prism.treat.high_effect_drugs$disease.area)
-diseaseareasxxx<-table(prism.treat.high_effect_drugs$disease.area)[which(as.numeric(table(prism.treat.high_effect_drugs$disease.area))>10)]
+##mode of action
+#Cluster1
+prism.cluster.1.moa<-table(prism.cluster1$moa)[which(as.numeric(table(prism.cluster1$moa))>=5)]
+#Cluster2
+prism.cluster.2.moa<-table(prism.cluster2$moa)[which(as.numeric(table(prism.cluster2$moa))>=5)]
+#Cluster3
+prism.cluster.3.moa<-table(prism.cluster3$moa)[which(as.numeric(table(prism.cluster3$moa))>=5)]
+#all high effective drugs
+plot.new()
+dotchart(as.numeric(table(prism.treat.high_effect_drugs$moa)), xlab= "Frequency", ylab="Modes of action", main= "Frequency of each mode of action")
+abline(v=10, col="red")
+prism.moa<-table(prism.treat.high_effect_drugs$moa)[which(as.numeric(table(prism.treat.high_effect_drugs$moa))>=10)]
+
+##disease area
+table(prism.treat.high_effect_drugs$disease.area)[which(as.numeric(table(prism.treat.high_effect_drugs$disease.area))>5)]
+
 #target
-prism.cluster1$target
-dotchart(as.numeric(table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target))>5)]))
-table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target))>10)]
-hist(as.numeric(table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target)))]))
-##which(table(prism.treat.high_effect_drugs$disease.area)!=0)
+hist(as.numeric(table(prism.treat.high_effect_drugs$target)))
+table(prism.treat.high_effect_drugs$target)[which(as.numeric(table(prism.treat.high_effect_drugs$target))>5)]
 
 #dose
 hist(prism.treat.high_effect_drugs$dose)
-
-
 
 #anteil der mode of actions in den einzelnen cluster
 prism_cluster_all<-prism.treat.high_effect_drugs
@@ -597,7 +593,10 @@ prism_cluster_all$cluster<-NA
 prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluster1)]<-1
 prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluster2)] <-2
 prism_cluster_all$cluster[rownames(prism_cluster_all) %in% rownames(prism.cluster3)]<-3
-prism_cluster_all_test=
+
+moa_counts<-table(prism_cluster_all$moa)
+moa_counts<-names(moa_counts[moa_counts > 5])
+prism_cluster_all_test <- prism_cluster_all[prism_cluster_all$moa %in% moa_counts, ]
 
 # Number of unique categories
 num_categories <- length(unique(prism_cluster_all_test$moa))
