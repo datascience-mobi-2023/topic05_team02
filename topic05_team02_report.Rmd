@@ -602,7 +602,7 @@ hist(final_cor)
 hist(kidney_cor)
 ```
 
-As the sample size exceeds 5000 it was not possible to perform a Shapiro-Wilks test, so for a first analysis a qqplot was plotted (kidney correlation values against a random normal distibution with `n= sample size` of correlation values and `mean= mean` of correlation values).
+As the sample size exceeds 5000 it was not possible to perform a Shapiro-Wilks test, so for a first analysis a qqplot was plotted (kidney correlation values against a random normal distribution with `n= sample size` of correlation values and `mean= mean` of correlation values).
 The line showing normal distribution did not align with the plotted values.
 To confirm this result, a Kolmogorov-Smirnov test (@LotharSachs2006) was performed.
 In this case F~0~=`rnorm` and F~n~=`kidney_cor` (distribution of kidney cell lines correlation values between cnv and exp).
@@ -740,50 +740,6 @@ ggplot(prism_cluster_all_often, aes(x = cluster, fill = moa)) +
   scale_fill_manual(values= cols25(25)) +
   labs(x = "Cluster", y = "Mode of actions", title = "Mode of actions in highly effectivte drug clusters") +
   theme_minimal()
-```
-
-##### of highly effective drugs in kidney cell lines (2% quantile)
-
-```{r cluster_kidney_cl, echo=FALSE}
-par(mfrow = c(1,2))
-#run k-means for k=1 to k=15 clusters, and for each k check the WSS value
-#identify data frame with only high effective drugs in kidney cancer
-prism_kidney_clustering<- prism_NA_0[, rownames(prism.treat.kidney.high_effect_drugs)]
-#calculate within-square-distance
-wss_kidney_prism = sapply(1:15,function(k) { 
-    kmeans(x=t(prism_kidney_clustering), centers =k)$tot.withinss
-})
-plot(1:15,wss_kidney_prism,type='b',pch=19,xlab="Number of clusters K",
-     ylab="Total within-clusters sum of squares")
-
-#clustern sie nach moa?
-#identification of cluster content
-#assigns each broad-ID to one of 2 clusters
-km_prism_kidney_cluster = kmeans(t(prism_kidney_clustering), 
-            centers = 2, 
-            nstart = 10)
-#print(km_prism_kidney_cluster)
-
-#extracts drug ID s for each cluster and stores them in kidney_cluster_list
-prism_kidney_cluster_list<-list()
-for(i in 1:2){
-  prism_kidney_cluster_list[[i]]<-which(km_prism_kidney_cluster$cluster== i)
-}
-prism.kidney.cluster1<-prism.treat[names(prism_kidney_cluster_list[[1]]),]
-prism.kidney.cluster2<-prism.treat[names(prism_kidney_cluster_list[[2]]),]
-#extracts mode of action for drugs in each cluster
-#table(prism.kidney.cluster1$moa)
-#prism.kidney.cluster2$moa
-
-dotchart(as.numeric(table(prism.kidney.cluster1$moa)))
-```
-
-```{r tables, include=FALSE}
-table(prism.kidney.cluster1$moa)[which(as.numeric(table(prism.kidney.cluster1$moa))>5)]
-table(prism.kidney.cluster2$moa)[which(as.numeric(table(prism.kidney.cluster2$moa))>5)]
-
-#kidney targets
-table(prism.treat.kidney.high_effect_drugs$target)[which(as.numeric(table(prism.treat.kidney.high_effect_drugs$target))>=5)]
 ```
 
 #### Principal component analysis
