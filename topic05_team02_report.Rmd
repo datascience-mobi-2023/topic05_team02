@@ -42,8 +42,6 @@ AS fpr every developmental method drug repurposing has a risk of failure and lim
 In order to generate data several thousand cell lines need to be screened to a large amount of different drugs and drug doses to find high cell growth inhibiting candidates.
 To facilitate this approach and reduce the amount of work and time required a new method has been developed, called
 
-!!!!!!!!!!!!!!!!!!!! Beschreibung der Fragestellung, Vorstellung der publizierten Vorarbeiten,\...
-
 The repurposing of non-oncology drugs, is one way to find potential treatments for cancer in the future.
 This offers several advantages over the development of new drugs.
 For example, initial study phases can be shortened or skipped altogether because studies have already been completed.
@@ -65,7 +63,7 @@ The data we used for the project was published by @Corsello_2020 and @Dempster_2
 #### What data do we have and what does it tell us?
 
 | data set         | explanation                                                                                                                        |
-|--------------|----------------------------------------------------------|
+|-----------------|-------------------------------------------------------|
 | `prism.exp`      | Transcripts per million of the genes (columns) for the cell lines (rows)                                                           |
 | `prism.treat`    | information about each drug (rows) and dosis                                                                                       |
 | `prism`          | treatment effects (columns) on the cell growth for each cell line (rows)                                                           |
@@ -325,6 +323,10 @@ colnames_neg_corr <- colnames(final_correlation_ach_exp_kidney)[which(final_corr
 high_corr_genenames<-c(colnames_neg_corr, colnames_pos_corr)
 ```
 
+The correlation values are distributed as in the histogram.
+We had a further look on the genes with values below the 2% quantile and above the 98% quantile of the correlation values.
+These 704 genes are the ones with high negative and positive correlation between achilles and expression.
+
 ```{r correlation_histogram, echo=FALSE}
 hist(correlation_ach_exp_kidney, breaks = 40, main= "Histogram of the correlation btw. achilles & expression for kidney cell lines  ", xlab="Correlation values" )
 qu<-quantile(correlation_ach_exp_kidney, 0.02, na.rm = TRUE)
@@ -336,6 +338,7 @@ abline(v=c(-qu,qu), col= "steelblue4", lwd=2)
 In order to slow down or even prevent the growth of tumor cells, we are looking for drugs of which a negative value was obtained in the prism screening.
 Since the effect should be as strongly negative as possible, it was decided, after considering the distribution of prism values, to classify drugs below a threshold of the 2% quartile of prism values as highly effective drugs.
 This resulted in 429 unique drugs and 668 different drug-dose combinations.
+Those drugs have 463 target genes.
 
 ```{r neg_effect_drugs, include=FALSE}
 #Set threshold depending on the distribution of prism 
@@ -457,6 +460,8 @@ correlation_plot<-ggplot(df_corr_ach_exp_kidney_intr_targets, aes(x = Genes, y =
   ggtitle("correlation values of target genes")+
   theme(axis.text.x = element_text(angle = 55, hjust = 1))
 
+mutation_plot
+correlation_plot
 ```
 
 ```{r echo=FALSE}
