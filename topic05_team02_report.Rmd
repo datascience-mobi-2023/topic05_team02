@@ -21,41 +21,62 @@ bibliography: topic05_team02_references.bib
 ## Introduction
 
 ### Drug repurposing
-
-Cancer is one of the leading death causes worldwide with a new case incidence of 442.4 per 100,000 people and 10 million deaths per year.
+Cancer is one of the leading death causes worldwide with a new case incidence of 442.4 per 100,000 people and 10 million deaths per year.@Electronic{2023,
+  month        = jul,
+  organization = {WHO},
+  title        = {Cancer},
+  url          = {https://www.who.int/news-room/fact-sheets/detail/cancer},
+  year         = {2023},
+}
+@Electronic{2023a,
+  month        = jul,
+  organization = {National Cancer Instituteat the National Institutes of Health},
+  title        = {Cancer Statistics},
+  url          = {https://www.cancer.gov/about-cancer/understanding/statistics},
+  year         = {2023},
+}
 Therefore it becomes more and more important to find new treatments, but drug development is an expensive and time-taking process which is why new approaches need to be put into place.
-Drug repurposing is a very promising way to reduce the invevstment into finding new treatments.
+Drug repurposing is a very promising way to reduce the investment into finding new treatments as many drugs interact with multiple targets and biological pathways beyond their originally intended purpose.
 
-There are several different computational and experimental approaches to drug repurposing but the overall aim is to identify an unknown effect of a known drug.
+There are several different computational and experimental approaches to drug repurposing but the overall aim is to identify an unknown effect of a known drug by identifying its mode of action (target,selectivity, affinity,...)
 Ketoconalzone for example was originally developed for fungal infections and then found to be effective in the Cushing syndrome as well.
-This method has different advantages: It is safer, because most of the drugs have already been tested in preclinical studies so the risk of failure due to toxicity for example is lower.
-Economizing the preclinical trials also reduces the development time and cost.
-Investment becomes more attractive because the its return is more likely and quicker.
+Repurposing has different advantages: It is safer, because most of the drugs have already been tested in preclinical studies so the risk of failure due to toxicity for example is lower.
+Economizing the preclinical trials also reduces the development time and cost. Investment becomes more attractive because its return is more likely and quicker.
 
 Experimental approaches are binding assays to identify target interactions and phenotypic screening.
 
 Computational approaches are signature matching (transcriptomics, chemical structure, adverse effect signature, shared targets or pathways), computational molecular docking (binding-site complementarity), genome-wide association studies (genetic variation associated with disease phenotypes), pathway or network mapping (up/down-stream genes might be better targets in the same pathway than the identified gene) and retrospective clinical analysis.
-AS fpr every developmental method drug repurposing has a risk of failure and limitations, including regulatory and organizational hurdles, as well as patent considerations.
+As for every developmental method drug repurposing has a risk of failure and limitations, including regulatory and organizational hurdles, as well as patent considerations. (@Pushpakom_2018 , @Corsello_2020).
 
 ### PRISM screen
-
 In order to generate data several thousand cell lines need to be screened to a large amount of different drugs and drug doses to find high cell growth inhibiting candidates.
 To facilitate this approach and reduce the amount of work and time required a new method has been developed, called PRISM (profiling relative inhibition simultaneously in mixtures). PRISM is a pooled approach where each cell line is labeled with a 24-nucleotide-barcode. It allows a higher diversity of cell lines which is essential for cancer research and treatment as cancer comes in a lot of different variants, higher number of cell lines screened in reduced time and comparability between the cell lines, as they all grow under identical drug concentrations and culture conditions.
 
+#### Cell lines
+The cell lines used for PRISM screening are part of the cancer cell line encyclopedia, where about 1000 cell lines have been genetically characterized.
+
 ### PRISM achilles screen
-Achilles is a CRISPR/Cas loss-of-function screen. Genes are selectively knocked-out to test cell viability/
-Identification of cancer-specific gene targets permits more selective killing of cancerous cells instead of the general cell toxicity of known drugs.
+Achilles is a CRISPR/Cas loss-of-function screen. Genes are selectively knocked-out to test cell viability/growth. The combination of achilles-screening and drug sensitivity assays facilitates identification of mechanisms of action.
+Identification of cancer-specific gene targets and pathways permits more selective killing of cancerous cells instead of the general cell toxicity of known drugs.
+@Article{Dempster_2019,
+  author    = {Joshua M. Dempster and Jordan Rossen and Mariya Kazachkova and Joshua Pan and Guillaume Kugener and David E. Root and Aviad Tsherniak},
+  title     = {Extracting Biological Insights from the Project Achilles Genome-Scale {CRISPR} Screens in Cancer Cell Lines},
+  year      = {2019},
+  month     = {jul},
+  doi       = {https://doi.org/10.1101/720243},
+  publisher = {Cold Spring Harbor Laboratory},
+}
+@Electronic{2023b,
+  month        = jul,
+  organization = {MolecularCloud},
+  title        = {How to perform a CRISPR knockout experiment?},
+  url          = {https://www.molecularcloud.org/p/how-to-perform-a-crispr-knockout-experiment-663},
+  year         = {2023},
+}
 
+### This report
+The aim in this report was to identify pathways and targets that occur in cancer cell lines, as well as the identification of highly effecive drugs by computational drug repurposing approaches. A special focus was put on kidney cancer cell lines.
 
-
-
-
-The repurposing of non-oncology drugs, is one way to find potential treatments for cancer in the future.
-This offers several advantages over the development of new drugs.
-For example, initial study phases can be shortened or skipped altogether because studies have already been completed.
-So time and money can be saved through that (@Pushpakom_2018 , @Corsello_2020).
-
-Many drugs interact with multiple targets and biological pathways beyond their originally intended purpose.
 
 ## Material and Methods
 
@@ -68,7 +89,7 @@ load("C:/Users/User/Downloads/prism_datasets.rda")
 
 The data we used for the project was published by @Corsello_2020 and @Dempster_2019.
 
-#### What data do we have and what does it tell us?
+#### What data was used?
 
 | data set         | explanation                                                                                                                        |
 |-----------------|-------------------------------------------------------|
@@ -82,16 +103,15 @@ The data we used for the project was published by @Corsello_2020 and @Dempster_2
 
 ### data cleanup
 
-Before we started to work with our data sets, we first had to do some data cleanup.
-For that we generated some sub-data sets for the 17 kidney cancer cell lines and for some areas of application we needed to set NA-values to zero.
+Before working with the data sets, data cleanup was necessary.
+Sub-data sets for the 17 kidney cancer cell lines were created and for some areas of application NA-values were set to zero. The replacement by 0 was chosen because in of the interest in for exemple highly expressed genes (value>>0) or highly cell growth inhibiting/promoting drugs (value>>/<< 0) and 0 can be seen as the to a "no-effect"- statement.
 
-We set the rownames of prism.cl as cell line names and deleted some rows with information which was not further needed to reduce the amount of data we had.
+The rownames of prism.cl were set as cell line names and rows with information which was not further needed were removed to reduce the amount of data. 
 
-To get a deeper insight into kidney cancer, we had to take a closer look at the corresponding data.
-For this purpose, we extracted sub-datasets from the various prism datasets and saved them as `prism.[...].kidney` .
+To get a deeper insight into kidney cancer, a closer look at the corresponding data was required. For this purpose, sub-datasets from the various prism datasets were extracted and saved as `prism.[...].kidney` .
 
-We have also created lists for `prism`, its top variance(\>= 75% quantile ) `prism_var_list` and `prism.exp`.
-In these, the sub-datasets for all cancer types analyzed, are separately accessible such as for Sarcoma: `prism_list[["Sarcoma"]]`
+Furthermore, lists for `prism`, its top variance(\>= 75% quantile ) `prism_var_list` and `prism.exp` were created.
+In these, the sub-datasets for all cancer types analyzed, are separately accessible such as for Kidney Cancer: `prism_list[["Kidney Cancer"]]`
 
 ```{r cleanup_cols_prism.cl, include=FALSE}
 #reorder columns of prism.cl
@@ -215,8 +235,21 @@ The larger the distance the less likely it is for F~0~ to follow F~n~.
 
 #### Anderson-Darling-test
 
-The `ad.test()` allows conclusions about wheater a given data sample follows a particular distribution or not.
+The `ad.test()` allows conclusions about weather a given data sample follows a particular distribution or not.
 In contrast to the Kolmogorov-Smirnov test, more attention is paid to the tails and in R it is possible to consider larger data sets.
+
+### Correlation analysis
+For correlation analysis, the Spearman method was used, which computes the correlation of the ranks of the values in order to minimize the effect of outliers. It is based on the covariance between two variables, divided by the product of their standard deviation and assumes a linear relationship.
+
+### k-means clustering, wss
+To identify groups of similar samples the eucledian distance between them in the variable space is calculated. Close objects cluster together. It is important to keep in mind that k-means identifies clusters even if there are no clear partitions/ extreme distances between data points. In this report the elbow method was used as the silhouette method did not provide usable results. Therefore the sum of pairwise squared distances is computed (wss, =within square sum). The optimal number of clusters is reached when adding clusters does not remarkably improve the wss-value which can be observed as a knick in the plot for various k (cluster)-values.
+
+### Principal component analysis
+Principal component analysis is used to reduce the dimensionality of a dataframe to variables carrying the highest information content (explaining most of the variance). As the data used for analysis is already centred and scaled this step can be skipped. A PCA plot (PC1 against PC2) can help to visualize the data and identify groupings/similarity in the data. The principle of PCA is to find the rotation that makes the correlation matrix diagonal.
+
+### Linear regression
+Linear regression is used to predict a variable out of known variables. Three steps are effected: data training (learn regression model from data), testing (on independant datasets) and predicting on new data but in a first analysis does steps are not necessary. A linear relationship between the variables is assumed. The regression line is computed by the minimization of the sum of squares of the deviations. The measure of efficiency is the R^2 value which is the proportion of variance explained by the model. The higher the value the better the regression model.
+
 
 ## Results
 
@@ -344,7 +377,7 @@ abline(v=c(-qu,qu), col= "steelblue4", lwd=2)
 ###### **Which drugs do have a high negative effect on the kidney cancer cell lines?**
 
 In order to slow down or even prevent the growth of tumor cells, we are looking for drugs of which a negative value was obtained in the prism screening.
-Since the effect should be as strongly negative as possible, it was decided, after considering the distribution of prism values, to classify drugs below a threshold of the 2% quartile of prism values as highly effective drugs.
+Since the effect should be as strongly negative as possible, it was decided, after considering the distribution of prism values, to classify drugs below a threshold of the 2% quantile of prism values as highly effective drugs.
 This resulted in 429 unique drugs and 668 different drug-dose combinations.
 Those drugs have 463 target genes.
 
@@ -471,7 +504,7 @@ correlation_plot<-ggplot(df_corr_ach_exp_kidney_intr_targets, aes(x = Genes, y =
 mutation_plot
 correlation_plot
 ```
-
+The possible target genes, do have a lot of missense mutations as well as silent mutations. Overall there are four genes with apparently more mutations than the others (ANO1, ATR,BRAF,NOS2).
 ```{r echo=FALSE}
 prism.exp.kidney_intr_targets <- prism.exp.kidney[, colnames(prism.exp.kidney) %in% intr_targets]
 
@@ -528,7 +561,7 @@ prism.exp_corr_cleaned<- prism.exp_corr_cleaned[order(rownames(prism.exp_corr_cl
 prism.cnv_corr_cleaned= prism.cnv_corr_cleaned[,colnames(prism.exp_corr_cleaned)]
 ```
 
-The correlation was computed for each gene once using only the kidney cell line samples and once for the whole data set.
+The correlation was computed for each gene once using only the kidney cell line samples and once for the whole data set using the Spearman correlation which is less sensitive to outliers.
 The whole-cell-line correlations show a lower dispersion (values rangig from -0.24 to +0.78) than the correlations computed with only kidney cell lines (range: -0.78 to +0.96) which can be explained by the amount of data.
 While 16% of the overall correlation values lie below 0, kidney cell lines had showed lower correlation value (34.7% \<0) Overall, for some genes copy number variation seems to be highly correlated (high copy number variation-\> high gene expression), while for others there's even a negative correlation observable (high cnv-\> low exp).
 As the histogram of the correlation values of kidney cell lines seems normally distributed, normality tests were performed.
@@ -635,7 +668,7 @@ The occurrence of mode of actions can be seen in the dotchart below.
 A clustering by mode of action is possible but not clear enough.
 Some modes of action are only highly represented in one cluster (eg aurora kinase inhibitor in cluster 1, HSP inhibitor in cluster 2, tubulin polymerization inhibitor in 1&2 but very little in 3 etc.) whereas other modes of action are equally spread beyond the clusters (HDAC inhibitor, ATPase inhibitor,...).
 Especially cluster 1 and 2 seem very similar in the distribution of modes of action.
-The question on which similarity characteristic the clustering happens.
+The question on which similarity characteristic the clustering happens remains open but as clusters are identified even if there is no clear structur in the data it is also possible that the highly effective drugs are randomly spread and don't cluster at all.
 At last, the drug dose was further investigated but again, the distribution was very similar in all three clusters with peaks at (0-0.249),(0.625-0.749), (2,5-2,624), (10-10,124).
 
 ```{r echo=FALSE}
