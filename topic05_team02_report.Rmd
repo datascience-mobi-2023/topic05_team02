@@ -40,7 +40,15 @@ AS fpr every developmental method drug repurposing has a risk of failure and lim
 ### PRISM screen
 
 In order to generate data several thousand cell lines need to be screened to a large amount of different drugs and drug doses to find high cell growth inhibiting candidates.
-To facilitate this approach and reduce the amount of work and time required a new method has been developed, called
+To facilitate this approach and reduce the amount of work and time required a new method has been developed, called PRISM (profiling relative inhibition simultaneously in mixtures). PRISM is a pooled approach where each cell line is labeled with a 24-nucleotide-barcode. It allows a higher diversity of cell lines which is essential for cancer research and treatment as cancer comes in a lot of different variants, higher number of cell lines screened in reduced time and comparability between the cell lines, as they all grow under identical drug concentrations and culture conditions.
+
+### PRISM achilles screen
+Achilles is a CRISPR/Cas loss-of-function screen. Genes are selectively knocked-out to test cell viability/
+Identification of cancer-specific gene targets permits more selective killing of cancerous cells instead of the general cell toxicity of known drugs.
+
+
+
+
 
 The repurposing of non-oncology drugs, is one way to find potential treatments for cancer in the future.
 This offers several advantages over the development of new drugs.
@@ -622,7 +630,7 @@ plot(1:15,wss_prism,type='b',pch=19,xlab="Number of clusters K",
 To further analyse the cluster contents, a data frame for each cluster was created and several characteristics (mode of action, targets,disease area, ...) compared.
 Some targets were a lot more represented than others (see section "targets of highly effective drugs") but not important for the clustering.
 The often represented disease areas were the same in all clusters and are visualized in the table below.
-Interestingly, drugs known to be efficient in infectious diseases are highly represented, as well as oncologic, cardiologic anf hematologic malignancy drugs.
+Interestingly, drugs known to be efficient in infectious diseases are highly represented, as well as oncologic, cardiologic anf hematologic malignancy drugs. A closer look on the infectious disease drugs showed that most of them are tubulin polymerization inhibitors and other DNA-replication-related mode of actions.
 The occurrence of mode of actions can be seen in the dotchart below.
 A clustering by mode of action is possible but not clear enough.
 Some modes of action are only highly represented in one cluster (eg aurora kinase inhibitor in cluster 1, HSP inhibitor in cluster 2, tubulin polymerization inhibitor in 1&2 but very little in 3 etc.) whereas other modes of action are equally spread beyond the clusters (HDAC inhibitor, ATPase inhibitor,...).
@@ -659,6 +667,13 @@ prism.moa<-table(prism.treat.high_effect_drugs$moa)[which(as.numeric(table(prism
 
 ##disease area
 table(prism.treat.high_effect_drugs$disease.area)[which(as.numeric(table(prism.treat.high_effect_drugs$disease.area))>5)]
+
+##infectious diseases
+infectdisease<-prism_cluster_all[prism_cluster_all$disease.area== "infectious disease",]
+infectdisease<-infectdisease[!rownames(infectdisease) %in% rownames(infectdisease)[apply(infectdisease, 1, function(x) any(is.na(x)))],]
+
+#specific drugs
+table(prism_cluster_all$name)[which(as.numeric(table(prism_cluster_all$name))>5)]
 
 #dose
 hist(prism.treat.high_effect_drugs$dose, breaks=seq(0,12, by=0.25), main= "Frequency of drug dose in highly efficient drug/dose combinations", xlab= "dose")
