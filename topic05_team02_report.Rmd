@@ -20,7 +20,27 @@ bibliography: topic05_team02_references.bib
 
 ## Introduction
 
+### Drug repurposing
+
 Cancer is one of the leading death causes worldwide with a new case incidence of 442.4 per 100,000 people and 10 million deaths per year.
+Therefore it becomes more and more important to find new treatments, but drug development is an expensive and time-taking process which is why new approaches need to be put into place.
+Drug repurposing is a very promising way to reduce the invevstment into finding new treatments.
+
+There are several different computational and experimental approaches to drug repurposing but the overall aim is to identify an unknown effect of a known drug.
+Ketoconalzone for example was originally developed for fungal infections and then found to be effective in the Cushing syndrome as well.
+This method has different advantages: It is safer, because most of the drugs have already been tested in preclinical studies so the risk of failure due to toxicity for example is lower.
+Economizing the preclinical trials also reduces the development time and cost.
+Investment becomes more attractive because the its return is more likely and quicker.
+
+Experimental approaches are binding assays to identify target interactions and phenotypic screening.
+
+Computational approaches are signature matching (transcriptomics, chemical structure, adverse effect signature, shared targets or pathways), computational molecular docking (binding-site complementarity), genome-wide association studies (genetic variation associated with disease phenotypes), pathway or network mapping (up/down-stream genes might be better targets in the same pathway than the identified gene) and retrospective clinical analysis.
+AS fpr every developmental method drug repurposing has a risk of failure and limitations, including regulatory and organizational hurdles, as well as patent considerations.
+
+### PRISM screen
+
+In order to generate data several thousand cell lines need to be screened to a large amount of different drugs and drug doses to find high cell growth inhibiting candidates.
+To facilitate this approach and reduce the amount of work and time required a new method has been developed, called
 
 !!!!!!!!!!!!!!!!!!!! Beschreibung der Fragestellung, Vorstellung der publizierten Vorarbeiten,\...
 
@@ -34,8 +54,10 @@ Many drugs interact with multiple targets and biological pathways beyond their o
 ## Material and Methods
 
 ```{r load_datasets, include=FALSE}
-load("C:/Users/Jessica Albrecht/Desktop/Uni/BioInfo Project/cellline_datasets.rda")
-load("C:/Users/Jessica Albrecht/Desktop/Uni/BioInfo Project//prism_datasets.rda")
+#load("C:/Users/Jessica Albrecht/Desktop/Uni/BioInfo Project/cellline_datasets.rda")
+#load("C:/Users/Jessica Albrecht/Desktop/Uni/BioInfo Project//prism_datasets.rda")
+load("C:/Users/User/Downloads/cellline_datasets.rda")
+load("C:/Users/User/Downloads/prism_datasets.rda")
 ```
 
 The data we used for the project was published by @Corsello_2020 and @Dempster_2019.
@@ -43,7 +65,7 @@ The data we used for the project was published by @Corsello_2020 and @Dempster_2
 #### What data do we have and what does it tell us?
 
 | data set         | explanation                                                                                                                        |
-|------------------|------------------------------------------------------------------------------------------------------------------------------------|
+|--------------|----------------------------------------------------------|
 | `prism.exp`      | Transcripts per million of the genes (columns) for the cell lines (rows)                                                           |
 | `prism.treat`    | information about each drug (rows) and dosis                                                                                       |
 | `prism`          | treatment effects (columns) on the cell growth for each cell line (rows)                                                           |
@@ -558,7 +580,7 @@ In order to find out if a specific drug mode of action and/or target and therefo
 The analysis was carried out for cancer in general (high effective drugs on all-cell-line data frame) and for kidney cancer (high effective drugs in kidney cell lines).
 First, a data frame containing only the upper 2% quantile of effective drugs was extracted from the prism data frame to reduce it to a limited number of most effective drugs.
 
-```{r prism.treat_subset_high_eff_drugs, eval=FALSE, include=FALSE}
+```{r prism.treat_subset_high_eff_drugs, echo=FALSE}
 #Set threshold depending on the distribution of prism 
 #prism_threshold<- quantile(prism_NA_0, 0.02, na.rm=TRUE)
 
@@ -582,7 +604,7 @@ prism_clustering<- prism_NA_0[, rownames(prism.treat.high_effect_drugs)]
 K-means was performed for k=1:15 and the within-cluster-sum of squared errors (WSS) plotted.
 This allowed the identification of 3 clusters with sizes n(drugs)= 672; 470; 226.
 
-```{r eval=FALSE, include=FALSE}
+```{r echo=FALSE}
 #run k-means for k=1 to k=15 clusters, and for each k check the WSS value
 #calculate within-square-distance
 wss_prism = sapply(1:15,function(k) { 
